@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   title: 'Palki — Au fil de la beauté',
   description:
     "Institut de beauté à Ixelles : épilation au fil, henné naturel, soins visage et massages.",
+  icons: {
+    icon: '/icon.png',
+  },
 };
 
 export default function RootLayout({

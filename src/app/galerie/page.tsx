@@ -18,7 +18,7 @@ export default function GaleriePage() {
           Galerie
         </h1>
         <p className="mt-5 leading-relaxed text-ink/65">
-          [slug — quelques mots sur la galerie, à compléter.]
+          Retrouvez ici tout les prestations de l’institut Palki en images. Que ce soit pour un soin du visage, une épilation au fil ou un henné naturel, découvrez nos services et laissez-vous inspirer par notre savoir-faire et notre passion pour la beauté.
         </p>
       </header>
 

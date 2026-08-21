@@ -40,10 +40,18 @@ export interface Creneau {
 
 // Disponibilités hebdomadaires récurrentes, éditables par la cliente.
 // Un document par jour dans la collection "horaires" (id = "lundi", ...).
+// Sert de SEMAINE TYPE : repli pour toute semaine sans horaires propres.
 export interface HoraireJour {
   jour: string; // "lundi" ... "dimanche"
   ferme: boolean;
   creneaux: Creneau[];
+}
+
+// Horaires d'une semaine calendaire précise, qui remplacent la semaine type.
+// Un document dans la collection "semaines", id = date du lundi "YYYY-MM-DD".
+export interface SemaineHoraire {
+  lundi: string; // "YYYY-MM-DD" du lundi de la semaine
+  jours: HoraireJour[]; // 7 entrées, ordre lundi → dimanche
 }
 
 export type StatutReservation = 'en_attente' | 'confirme' | 'annule';
@@ -76,4 +84,25 @@ export interface Settings {
   telephone: string;
   email?: string;
   instagram?: string;
+}
+
+// ── Formations ────────────────────────────────────────────────────────
+export interface FormationEtape {
+  horaire: string; // "09h00 – 09h30"
+  titre: string;
+  points?: string[];
+}
+
+export interface Formation {
+  slug: string; // "epilation-au-fil" | "henne"
+  nom: string;
+  resume: string; // phrase courte (cartes)
+  intro: string[]; // paragraphes de présentation
+  duree: string; // "1 journée"
+  certificat: boolean;
+  kit?: string; // mention kit de démarrage
+  remarque?: string;
+  images: string[]; // une ou plusieurs images (carousel si plusieurs)
+  programme: FormationEtape[];
+  ordre: number;
 }

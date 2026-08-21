@@ -32,7 +32,7 @@ export default function TarifsPage() {
           Nos tarifs
         </h1>
         <p className="mt-5 leading-relaxed text-ink/65">
-          [slug — note sur les tarifs, à compléter.]
+          Découvrez nos prestations de beauté et leurs tarifs. Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, nous vous proposons des services de qualité adaptés à vos besoins.
         </p>
       </header>
 

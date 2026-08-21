@@ -3,15 +3,28 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ServiceCard from '@/components/ServiceCard';
-import { getServices, DEFAULT_SERVICES } from '@/lib/data';
-import type { Service } from '@/lib/types';
+import {
+  getServices,
+  DEFAULT_SERVICES,
+  getHoraires,
+  DEFAULT_HORAIRES,
+  JOURS,
+} from '@/lib/data';
+import type { Service, HoraireJour } from '@/lib/types';
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const jourActuel = () => JOURS[(new Date().getDay() + 6) % 7];
 
 export default function Home() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
+  const [horaires, setHoraires] = useState<HoraireJour[]>(DEFAULT_HORAIRES);
 
   useEffect(() => {
     getServices().then((s) => s.length && setServices(s));
+    getHoraires().then((h) => h.length && setHoraires(h));
   }, []);
+
+  const today = jourActuel();
 
   return (
     <>
@@ -57,7 +70,7 @@ export default function Home() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://palki.be/wp-content/uploads/2022/08/image-1.png"
-                alt="[slug — image institut]"
+                alt="https://palki.be/wp-content/uploads/2022/08/image-1.png"
                 className="aspect-[4/5] w-full object-cover"
               />
             </div>
@@ -65,10 +78,10 @@ export default function Home() {
           <div>
             <p className="eyebrow">Bienvenue</p>
             <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-              Un moment de douceur à votre image, au cœur d&apos;Ixelles
+              Un institut à votre image, au cœur d&apos;Ixelles
             </h2>
             <p className="mt-6 leading-relaxed text-ink/70">
-              Venez profiter d&apos;un moment de beauté et de détente dans notre institut, où nous vous proposons des soins personnalisés pour révéler votre éclat naturel.
+              Venez profiter d'un moment de beauté et de détente dans notre institut, où nous vous proposons des soins personnalisés pour révéler votre éclat naturel.
             </p>
             <p className="mt-4 leading-relaxed text-ink/70">
               Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, notre équipe est là pour vous offrir une expérience unique et agréable.
@@ -76,6 +89,57 @@ export default function Home() {
             <Link href="/soins" className="link-underline mt-8">
               Lire plus <span aria-hidden>→</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Disponibilités ────────────────────────────────────── */}
+      <section className="border-y border-sand bg-cloud">
+        <div className="mx-auto grid max-w-content gap-12 px-6 py-20 md:grid-cols-[1fr,1.15fr] md:items-center">
+          <div>
+            <p className="eyebrow">Horaires</p>
+            <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
+              Nos disponibilités
+            </h2>
+            <p className="mt-6 leading-relaxed text-ink/70">
+              Les horaires peuvent évoluer d&apos;une semaine à l&apos;autre. Pour
+              être sûre de votre créneau, réservez directement en ligne.
+            </p>
+            <Link href="/rendez-vous" className="btn-solid mt-8">
+              Prendre rendez-vous
+            </Link>
+          </div>
+
+          <div className="frame p-8">
+            <ul>
+              {horaires.map((h) => {
+                const actif = h.jour === today;
+                return (
+                  <li
+                    key={h.jour}
+                    className={`flex items-center justify-between border-b border-sand py-3.5 last:border-0 ${
+                      actif ? 'text-plum' : 'text-ink'
+                    }`}
+                  >
+                    <span className="flex items-center gap-3 font-sans text-sm uppercase tracking-[0.18em]">
+                      {cap(h.jour)}
+                      {actif && (
+                        <span className="rounded-full bg-plum px-2 py-0.5 text-[10px] tracking-[0.15em] text-cloud">
+                          Aujourd&apos;hui
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-display text-lg">
+                      {h.ferme || h.creneaux.length === 0
+                        ? 'Fermé'
+                        : h.creneaux
+                            .map((c) => `${c.debut} – ${c.fin}`)
+                            .join(', ')}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </section>
@@ -127,7 +191,7 @@ export default function Home() {
           Réservez votre moment de beauté
         </h2>
         <p className="mx-auto mt-5 max-w-lg leading-relaxed text-ink/65">
-          Prenez rendez-vous dès maintenant pour profiter d&apos;un soin du visage, d&apos;une épilation au fil ou d&apos;un henné naturel. Notre équipe vous accueillera avec soin et attention pour vous offrir une expérience unique et relaxante.
+          Prenez rendez-vous dès maintenant pour profiter d'un soin du visage, d'une épilation au fil ou d'un henné naturel. Notre équipe vous accueillera avec soin et attention pour vous offrir une expérience unique et relaxante.
         </p>
         <Link href="/rendez-vous" className="btn-solid mt-9">
           Prendre rendez-vous

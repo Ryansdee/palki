@@ -31,7 +31,7 @@ export default function PromotionsPage() {
           Promotions
         </h1>
         <p className="mt-5 leading-relaxed text-ink/65">
-          [slug — introduction aux offres, à compléter.]
+          Découvrez nos promotions en cours et profitez d&apos;offres exceptionnelles sur nos soins de beauté. Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, nous avons des offres adaptées à vos besoins pour vous permettre de prendre soin de vous à prix avantageux.
         </p>
       </header>
 

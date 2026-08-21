@@ -17,9 +17,11 @@ import type {
   Tarif,
   Promotion,
   HoraireJour,
+  SemaineHoraire,
   Reservation,
   Occupation,
   Settings,
+  Formation,
 } from './types';
 
 export const JOURS = [
@@ -51,7 +53,7 @@ export const DEFAULT_SERVICES: Service[] = [
     description:
       "[slug — description Épilation à compléter par la cliente]",
     image:
-      'https://palki.be/wp-content/uploads/2025/03/unnamed-1-768x660.jpg',
+      'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=80',
     ordre: 1,
     actif: true,
   },
@@ -61,7 +63,7 @@ export const DEFAULT_SERVICES: Service[] = [
     resume: "Henné naturel à base d'huiles essentielles.",
     description: '[slug — description Henné à compléter par la cliente]',
     image:
-      'https://palki.be/wp-content/uploads/2025/03/unnamed-768x660.jpg',
+      'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?w=1200&q=80',
     ordre: 2,
     actif: true,
   },
@@ -71,7 +73,7 @@ export const DEFAULT_SERVICES: Service[] = [
     resume: 'Soins du visage sur mesure, peaux sensibles bienvenues.',
     description: '[slug — description Soins visage à compléter]',
     image:
-      'https://palki.be/wp-content/uploads/2024/01/left-img1-445x660.jpg',
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80',
     ordre: 3,
     actif: true,
   },
@@ -79,9 +81,9 @@ export const DEFAULT_SERVICES: Service[] = [
     slug: 'massages',
     nom: 'Massages',
     resume: 'Massages relaxants pour relâcher les tensions.',
-    description: '',
+    description: '[slug — description Massages à compléter]',
     image:
-      'https://palki.be/wp-content/uploads/2022/08/spa-service-05-768x533.jpg',
+      'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=1200&q=80',
     ordre: 4,
     actif: true,
   },
@@ -167,6 +169,72 @@ export async function getHoraires(): Promise<HoraireJour[]> {
   } catch {
     return DEFAULT_HORAIRES;
   }
+}
+
+// ── Horaires par semaine calendaire ───────────────────────────────────
+// La cliente peut définir des horaires propres à une semaine donnée. À
+// défaut, on retombe sur la semaine type (getHoraires ci-dessus).
+
+// Format date locale "YYYY-MM-DD" (sans décalage UTC, contrairement à
+// toISOString qui peut basculer d'un jour en Belgique).
+const isoDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+
+// Lundi (YYYY-MM-DD) de la semaine contenant `date`.
+export function lundiDeLaSemaine(date: Date | string = new Date()): string {
+  const d =
+    typeof date === 'string' ? new Date(date + 'T00:00:00') : new Date(date);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // lundi = 0
+  return isoDate(d);
+}
+
+// Les 7 dates ISO d'une semaine, à partir de son lundi.
+export function datesSemaine(lundi: string): string[] {
+  const base = new Date(lundi + 'T00:00:00');
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base);
+    d.setDate(base.getDate() + i);
+    return isoDate(d);
+  });
+}
+
+// Horaires propres à une semaine, ou null si la cliente n'en a pas défini.
+export async function getSemaineOverride(
+  lundi: string
+): Promise<HoraireJour[] | null> {
+  try {
+    const snap = await getDoc(doc(db, 'semaines', lundi));
+    if (snap.exists()) return (snap.data() as SemaineHoraire).jours;
+  } catch {
+    /* repli */
+  }
+  return null;
+}
+
+export const saveSemaine = (lundi: string, jours: HoraireJour[]) =>
+  setDoc(doc(db, 'semaines', lundi), { lundi, jours } as SemaineHoraire);
+
+export const deleteSemaine = (lundi: string) =>
+  deleteDoc(doc(db, 'semaines', lundi));
+
+// Horaires effectifs d'une semaine (override si défini, sinon semaine type).
+export async function getHorairesSemaine(
+  lundi: string
+): Promise<{ jours: HoraireJour[]; personnalisee: boolean }> {
+  const override = await getSemaineOverride(lundi);
+  if (override) return { jours: override, personnalisee: true };
+  return { jours: await getHoraires(), personnalisee: false };
+}
+
+// Horaires effectifs d'un jour précis — utilisé par la prise de rendez-vous.
+export async function getHoraireForDate(date: string): Promise<HoraireJour> {
+  const { jours } = await getHorairesSemaine(lundiDeLaSemaine(date));
+  const nom = JOURS[(new Date(date + 'T00:00:00').getDay() + 6) % 7];
+  return (
+    jours.find((h) => h.jour === nom) ?? { jour: nom, ferme: true, creneaux: [] }
+  );
 }
 
 export async function getSettings(): Promise<Settings> {
@@ -363,6 +431,113 @@ export async function getGalerie(): Promise<Photo[]> {
 
 export const addPhoto = (p: Omit<Photo, 'id'>) => addDoc(collection(db, 'galerie'), p);
 export const deletePhoto = (id: string) => deleteDoc(doc(db, 'galerie', id));
+
+// ── Formations ────────────────────────────────────────────────────────
+// Contenu fixe (fourni par la cliente). Rendu directement par les pages,
+// sans passer par Firestore. Facile à migrer vers un éditeur admin plus tard.
+export const FORMATIONS: Formation[] = [
+  {
+    slug: 'epilation-au-fil',
+    nom: 'Formation Épilation au Fil',
+    resume:
+      'Une technique ancestrale indienne, précise et très demandée. Formation d’une journée, certifiée, tous niveaux.',
+    intro: [
+      'Apprenez une technique ancestrale indienne, aujourd’hui très demandée dans le monde de l’esthétique pour sa précision et son efficacité. Avec plus de 10 ans d’expérience, je vous propose une formation complète d’une journée, certifiée et adaptée à tous les niveaux.',
+      'Rejoignez-nous et lancez-vous dans l’aventure.',
+    ],
+    duree: '1 journée',
+    certificat: true,
+    remarque:
+      'Les élèves ayant besoin de plus de pratique ou de précision peuvent revenir ultérieurement pour un accompagnement complémentaire.',
+    // Ajoutez autant d'URLs que souhaité : le carousel apparaît dès la 2e.
+    images: [
+      'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80',
+      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80',
+    ],
+    ordre: 1,
+    programme: [
+      {
+        horaire: '09h00 – 09h30',
+        titre: 'Accueil et théorie',
+        points: [
+          'Présentation de la technique de l’épilation au fil',
+          'Hygiène, posture et bases essentielles',
+          'Explication du matériel et du fil',
+        ],
+      },
+      {
+        horaire: '09h30 – 10h30',
+        titre: 'Apprentissage de la manipulation du fil',
+        points: [
+          'Prise en main du fil',
+          'Exercices pratiques pour maîtriser le mouvement',
+          'Coordination des gestes',
+        ],
+      },
+      {
+        horaire: '10h30 – 12h30',
+        titre: 'Pratique sur modèle (zones simples)',
+        points: [
+          'Début de la pratique sur modèle',
+          'Travail sur des zones comme les jambes',
+          'Répétition des gestes pour gagner en précision et en confiance',
+        ],
+      },
+      { horaire: '12h30 – 13h00', titre: 'Pause déjeuner (30 minutes)' },
+      {
+        horaire: '13h00 – 14h00',
+        titre: 'Reprise de la pratique',
+        points: [
+          'Entraînement continu sur modèle',
+          'Possibilité de travailler sur les mains ou le visage selon la progression',
+        ],
+      },
+      {
+        horaire: '14h00 – 16h00',
+        titre: '[à compléter]',
+        points: ['[slug — programme de l’après-midi, message tronqué]'],
+      },
+    ],
+  },
+  {
+    slug: 'henne',
+    nom: 'Formation Henné',
+    resume:
+      'Henné naturel du Rajasthan, tamisé cinq fois. Formation d’une journée avec certificat et kit de démarrage en option.',
+    intro: [
+      'Je vous propose une formation au henné naturel, provenant directement du Rajasthan, en Inde, et finement tamisé cinq fois, ce qui facilite le travail des artistes.',
+      'Il s’agit d’une formation d’une journée, à l’issue de laquelle vous recevrez un certificat de participation. Il est également possible d’acheter un kit de démarrage.',
+      'Durant cette journée, vous apprendrez les bases théoriques ainsi que la pratique : comment fabriquer les cônes de henné, préparer la pâte, ainsi que le remplissage et la fermeture des cônes. Nous travaillerons ensemble afin de vous permettre de maîtriser les gestes essentiels. Pour clôturer la formation en beauté, vous réaliserez quelques motifs simples.',
+    ],
+    duree: '1 journée',
+    certificat: true,
+    kit: 'Kit de démarrage disponible à l’achat',
+    images: [
+      'https://images.unsplash.com/photo-1600091474842-83bf5b0f0b18?w=1200&q=80',
+      'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?w=1200&q=80',
+      'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=1200&q=80',
+    ],
+    ordre: 2,
+    programme: [
+      { horaire: '09h30 – 09h45', titre: 'Théorie' },
+      { horaire: '09h45 – 11h00', titre: 'Préparation de la pâte de henné' },
+      { horaire: '11h00 – 12h00', titre: 'Fabrication des cônes' },
+      { horaire: '12h00 – 13h00', titre: 'Remplissage des cônes' },
+      { horaire: '13h00 – 13h30', titre: 'Pause' },
+      { horaire: '13h30 – 15h00', titre: 'Fermeture des cônes' },
+      {
+        horaire: '15h00 – 16h30',
+        titre: 'Pratique / manipulation & motifs simples',
+      },
+    ],
+  },
+];
+
+export const getFormations = (): Formation[] =>
+  [...FORMATIONS].sort((a, b) => a.ordre - b.ordre);
+
+export const getFormation = (slug: string): Formation | null =>
+  FORMATIONS.find((f) => f.slug === slug) ?? null;
 
 // ── Initialisation (bouton admin) ─────────────────────────────────────
 // Écrit le contenu de départ dans Firestore. N'écrase pas les tarifs déjà

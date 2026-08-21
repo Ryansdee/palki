@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   getServices,
   getTarifs,
-  getHoraires,
+  getHoraireForDate,
   getOccupationForDate,
   getPromotions,
   promoPourService,
@@ -13,23 +13,15 @@ import {
   formatEuro,
   creneauxDisponibles,
   createReservation,
-  JOURS,
   DEFAULT_SERVICES,
 } from '@/lib/data';
-import type { Service, Tarif, HoraireJour, Promotion } from '@/lib/types';
-
-function jourFromDate(dateStr: string): string {
-  // getDay(): 0 = dimanche … 6 = samedi
-  const idx = new Date(dateStr + 'T00:00:00').getDay();
-  return JOURS[(idx + 6) % 7]; // décale pour que lundi = 0
-}
+import type { Service, Tarif, Promotion } from '@/lib/types';
 
 function Booking() {
   const searchParams = useSearchParams();
 
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [tarifs, setTarifs] = useState<Tarif[]>([]);
-  const [horaires, setHoraires] = useState<HoraireJour[]>([]);
   const [promos, setPromos] = useState<Promotion[]>([]);
 
   const [serviceSlug, setServiceSlug] = useState('');
@@ -47,7 +39,6 @@ function Booking() {
   useEffect(() => {
     getServices().then((s) => s.length && setServices(s));
     getTarifs().then(setTarifs);
-    getHoraires().then(setHoraires);
     getPromotions().then(setPromos);
   }, []);
 
@@ -68,23 +59,18 @@ function Booking() {
   // Recalcule les créneaux quand la prestation ou la date changent
   useEffect(() => {
     setHeure('');
-    if (!tarif || !date || horaires.length === 0) {
+    if (!tarif || !date) {
       setSlots([]);
       return;
     }
     setLoadingSlots(true);
-    const jour = jourFromDate(date);
-    const horaire =
-      horaires.find((h) => h.jour === jour) ?? {
-        jour,
-        ferme: true,
-        creneaux: [],
-      };
-    getOccupationForDate(date).then((occ) => {
-      setSlots(creneauxDisponibles(horaire, tarif.dureeMin, occ));
-      setLoadingSlots(false);
-    });
-  }, [tarif, date, horaires]);
+    Promise.all([getHoraireForDate(date), getOccupationForDate(date)]).then(
+      ([horaire, occ]) => {
+        setSlots(creneauxDisponibles(horaire, tarif.dureeMin, occ));
+        setLoadingSlots(false);
+      }
+    );
+  }, [tarif, date]);
 
   async function submit() {
     if (!tarif || !serviceSlug || !date || !heure) return;
@@ -308,4 +294,4 @@ export default function RendezVousPage() {
       <Booking />
     </Suspense>
   );
-}
+} 
