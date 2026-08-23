@@ -251,12 +251,13 @@ export async function getSettings(): Promise<Settings> {
 
 export function isPromoActive(p: Promotion): boolean {
   if (!p.actif) return false;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDate(new Date()); // heure locale (Belgique), pas UTC
   if (p.debut && today < p.debut) return false;
   if (p.fin && today > p.fin) return false;
   return true;
 }
 
+// Promo applicable au niveau d'un SERVICE (utilisée pour le bandeau de page).
 export function promoPourService(
   serviceSlug: string,
   promos: Promotion[]
@@ -265,6 +266,22 @@ export function promoPourService(
   return (
     actives.find((p) => p.cible === serviceSlug) ??
     actives.find((p) => p.cible === 'tout') ??
+    null
+  );
+}
+
+// Promo applicable à un TARIF précis (utilisée pour le prix ligne par ligne) :
+// - promo avec tarifCible → uniquement ce tarif
+// - promo sans tarifCible → tout le service (cible) ou 'tout'
+export function promoPourTarif(
+  tarif: Tarif,
+  promos: Promotion[]
+): Promotion | null {
+  const actives = promos.filter(isPromoActive);
+  return (
+    actives.find((p) => p.tarifCible === tarif.id) ??
+    actives.find((p) => !p.tarifCible && p.cible === tarif.serviceSlug) ??
+    actives.find((p) => !p.tarifCible && p.cible === 'tout') ??
     null
   );
 }
@@ -451,8 +468,10 @@ export const FORMATIONS: Formation[] = [
       'Les élèves ayant besoin de plus de pratique ou de précision peuvent revenir ultérieurement pour un accompagnement complémentaire.',
     // Ajoutez autant d'URLs que souhaité : le carousel apparaît dès la 2e.
     images: [
-      'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200&q=80',
-      'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&q=80',
+      'https://media.s-bol.com/gX5MGvYO3k5r/r0zAB2/550x575.jpg',
+      'https://i.ytimg.com/vi/nZsMf6CmSXM/maxresdefault.jpg',
+      'https://www.espace-concours.fr/uploads/2021/10/shutterstock_1082017538-540x360.jpg',
+      'https://serenity-institut.com/wp-content/uploads/2022/05/serenity-institut-epilation-au-fil-1024x684.jpg'
     ],
     ordre: 1,
     programme: [
@@ -513,9 +532,9 @@ export const FORMATIONS: Formation[] = [
     certificat: true,
     kit: 'Kit de démarrage disponible à l’achat',
     images: [
-      'https://images.unsplash.com/photo-1600091474842-83bf5b0f0b18?w=1200&q=80',
-      'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?w=1200&q=80',
-      'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=1200&q=80',
+      'https://www.floranjou.fr/modules/prestablog/views/img/grid-for-1-7/up-img/28.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e9/Mailanchi_Kai_IMG_7857.jpg?utm_source=fr.wikipedia.org&utm_campaign=index&utm_content=original',
+      'https://tresorsdusouk.com/cdn/shop/files/image-768x1024.jpg?v=1729523918&width=1445',
     ],
     ordre: 2,
     programme: [

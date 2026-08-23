@@ -22,6 +22,7 @@ export interface Tarif {
 export type PromotionType = 'pourcentage' | 'montant';
 
 export interface Promotion {
+  tarifCible: string;
   id: string;
   titre: string;
   description: string;

@@ -8,6 +8,7 @@ import {
   getTarifsByService,
   getPromotions,
   promoPourService,
+  promoPourTarif,
   prixApresPromo,
   formatEuro,
 } from '@/lib/data';
@@ -33,7 +34,8 @@ export default function ServiceDetail() {
   }
   if (service === null) return notFound();
 
-  const promo = promoPourService(service.slug, promos);
+  // Promo au niveau du service → sert uniquement au bandeau d'annonce.
+  const promoService = promoPourService(service.slug, promos);
 
   return (
     <div className="mx-auto max-w-content px-6 py-16">
@@ -60,10 +62,12 @@ export default function ServiceDetail() {
             {service.description}
           </p>
 
-          {promo && (
+          {promoService && (
             <div className="mt-8 border border-mauve/40 bg-cloud px-5 py-4">
-              <p className="eyebrow text-plum">{promo.titre}</p>
-              <p className="mt-1 text-sm text-ink/70">{promo.description}</p>
+              <p className="eyebrow text-plum">{promoService.titre}</p>
+              <p className="mt-1 text-sm text-ink/70">
+                {promoService.description}
+              </p>
             </div>
           )}
 
@@ -72,7 +76,10 @@ export default function ServiceDetail() {
               <p className="eyebrow">Tarifs</p>
               <ul className="mt-4 divide-y divide-sand border-t border-sand">
                 {tarifs.map((t) => {
-                  const prixFinal = prixApresPromo(t.prix, promo);
+                  // Promo appliquée ligne par ligne : un tarif précis
+                  // (tarifCible) ou tout le service, selon la promo.
+                  const promoT = promoPourTarif(t, promos);
+                  const prixFinal = prixApresPromo(t.prix, promoT);
                   const remise = prixFinal < t.prix;
                   return (
                     <li
