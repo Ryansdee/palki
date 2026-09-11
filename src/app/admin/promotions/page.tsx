@@ -20,6 +20,7 @@ const vide = {
   type: 'pourcentage' as PromotionType,
   valeur: 10,
   cible: 'tout',
+  tarifCible: 5,
   actif: true,
   debut: '',
   fin: '',
