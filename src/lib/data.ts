@@ -532,9 +532,8 @@ export const FORMATIONS: Formation[] = [
     certificat: true,
     kit: 'Kit de démarrage disponible à l’achat',
     images: [
-      'https://www.floranjou.fr/modules/prestablog/views/img/grid-for-1-7/up-img/28.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/e/e9/Mailanchi_Kai_IMG_7857.jpg?utm_source=fr.wikipedia.org&utm_campaign=index&utm_content=original',
-      'https://tresorsdusouk.com/cdn/shop/files/image-768x1024.jpg?v=1729523918&width=1445',
+      'https://palki.be/wp-content/uploads/2025/03/unnamed-768x660.jpg',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTS-34uBJ8TGXSECalypQNdy1zFQqN3mSsSCb6r5EBM9AaFqqRFfgadqKWZ&s=10'
     ],
     ordre: 2,
     programme: [
