@@ -48,6 +48,7 @@ export default function AdminPromotions() {
       valeur: Number(form.valeur),
       debut: form.debut || undefined,
       fin: form.fin || undefined,
+      tarifCible: form.tarifCible || undefined,
     });
     setForm(vide);
     await load();
