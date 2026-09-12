@@ -418,12 +418,11 @@ export function creneauxDisponibles(
 
 // ── Galerie ───────────────────────────────────────────────────────────
 
-export interface Photo {
+export type Photo = {
   id: string;
   url: string;
   legende?: string;
-  ordre: number;
-}
+};
 
 const DEFAULT_GALERIE: Photo[] = [
   'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=900&q=80',
@@ -436,13 +435,20 @@ const DEFAULT_GALERIE: Photo[] = [
 
 export async function getGalerie(): Promise<Photo[]> {
   try {
-    const snap = await getDocs(collection(db, 'galerie'));
-    if (snap.empty) return DEFAULT_GALERIE;
-    return snap.docs
-      .map((d) => ({ id: d.id, ...(d.data() as Omit<Photo, 'id'>) }))
-      .sort((a, b) => a.ordre - b.ordre);
+    const res = await fetch('/api/galeries', { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = (await res.json()) as Array<{
+      id: string;
+      url: string;
+      title?: string;
+    }>;
+    return data.map((p) => ({
+      id: p.id,
+      url: p.url,
+      legende: p.title || undefined,
+    }));
   } catch {
-    return DEFAULT_GALERIE;
+    return [];
   }
 }
 
@@ -456,16 +462,14 @@ export const FORMATIONS: Formation[] = [
   {
     slug: 'epilation-au-fil',
     nom: 'Formation Épilation au Fil',
-    resume:
-      'Une technique ancestrale indienne, précise et très demandée. Formation d’une journée, certifiée, tous niveaux.',
+    resume: 'Une technique ancestrale indienne, précise et très demandée. Formation d’une journée, certifiée, tous niveaux.',
     intro: [
       'Apprenez une technique ancestrale indienne, aujourd’hui très demandée dans le monde de l’esthétique pour sa précision et son efficacité. Avec plus de 10 ans d’expérience, je vous propose une formation complète d’une journée, certifiée et adaptée à tous les niveaux.',
       'Rejoignez-nous et lancez-vous dans l’aventure.',
     ],
     duree: '1 journée',
     certificat: true,
-    remarque:
-      'Les élèves ayant besoin de plus de pratique ou de précision peuvent revenir ultérieurement pour un accompagnement complémentaire.',
+    remarque: 'Les élèves ayant besoin de plus de pratique ou de précision peuvent revenir ultérieurement pour un accompagnement complémentaire.',
     // Ajoutez autant d'URLs que souhaité : le carousel apparaît dès la 2e.
     images: [
       'https://media.s-bol.com/gX5MGvYO3k5r/r0zAB2/550x575.jpg',
@@ -517,12 +521,13 @@ export const FORMATIONS: Formation[] = [
         points: ['[slug — programme de l’après-midi, message tronqué]'],
       },
     ],
+    videoPoster: undefined,
+    galerie: false
   },
   {
     slug: 'henne',
     nom: 'Formation Henné',
-    resume:
-      'Henné naturel du Rajasthan, tamisé cinq fois. Formation d’une journée avec certificat et kit de démarrage en option.',
+    resume: 'Henné naturel du Rajasthan, tamisé cinq fois. Formation d’une journée avec certificat et kit de démarrage en option.',
     intro: [
       'Je vous propose une formation au henné naturel, provenant directement du Rajasthan, en Inde, et finement tamisé cinq fois, ce qui facilite le travail des artistes.',
       'Il s’agit d’une formation d’une journée, à l’issue de laquelle vous recevrez un certificat de participation. Il est également possible d’acheter un kit de démarrage.',
@@ -532,9 +537,11 @@ export const FORMATIONS: Formation[] = [
     certificat: true,
     kit: 'Kit de démarrage disponible à l’achat',
     images: [
-      'https://palki.be/wp-content/uploads/2025/03/unnamed-768x660.jpg',
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTS-34uBJ8TGXSECalypQNdy1zFQqN3mSsSCb6r5EBM9AaFqqRFfgadqKWZ&s=10'
+      'https://scontent-bru2-1.cdninstagram.com/v/t51.82787-15/762676734_18420554065183939_5761963327368721319_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=111&ig_cache_key=Mzk1NDMyNjgwOTk1NDMwMjgwNjE4NDIwNTU0MDYyMTgzOTM5.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNMSVBTLnhwaWRzLjEyMDYuc2RyLnZpZGVvX2RlZmF1bHRfY292ZXJfZnJhbWUuQzMifQ%3D%3D&_nc_ohc=3xqgAaK5rgkQ7kNvwHCNzFy&_nc_oc=Adq8Bz_E-R7xCXNI1U6CmO507K-z71Y9DJ079w3sh7CXiKxHKINk_Y0DAHC4xhLrohs&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-bru2-1.cdninstagram.com&_nc_gid=Zzlg2GQOOn04OgSwCU9A5Q&_nc_ss=7a22e&oh=00_AQIBXjC3Ea0Yuah-4cYh18eWcS4BnhHKKEGkE3K9QWkqoA&oe=6AAAB481',
+      'https://scontent-bru2-1.cdninstagram.com/v/t51.82787-15/656794292_18400445548183939_6109247737782567174_n.jpg?stp=dst-jpegr_e35_tt6&_nc_cat=105&ig_cache_key=Mzg1ODA4MDMwNzcwMjQ1NTAzNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTQ0MC5oZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=1AtS2bXd0xEQ7kNvwExTCEd&_nc_oc=AdqP5gg3Hki5o-0fvU1PmKCuogEBnj-7kcUsqOJptiLgl-NL7F-DadjSgUs1-64hYb4&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-bru2-1.cdninstagram.com&_nc_gid=TTpuO0-lOWHPNKbH3nIWXQ&_nc_ss=7a22e&oh=00_AQKlBHnvEE8TaaoA1J0r4mKUNZ2EtWcWEQlZI3drtKarbw&oe=6AAABE60',
+      'https://scontent-bru2-1.cdninstagram.com/v/t51.71878-15/618735077_911947011291146_7873329434786203771_n.jpg?stp=dst-jpg_e15_tt6&_nc_cat=102&ig_cache_key=MzgxMjk5OTU5OTMwOTIwNTQwNA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNMSVBTLnhwaWRzLjY0MC5zZHIudmlkZW9fZGVmYXVsdF9jb3Zlcl9mcmFtZS5DMyJ9&_nc_ohc=juV-AXFN-ksQ7kNvwHieamb&_nc_oc=Ado5WEnfmd0kvwBlnegogS7rfG2JoR-bKmyqVQ9mHLtIWwkRrj_xy9ts5zTRqM1Yfoc&_nc_ad=z-m&_nc_cid=0&_nc_zt=23&_nc_ht=scontent-bru2-1.cdninstagram.com&_nc_gid=9eMJZtCB1WnNsPNlnV0dvw&_nc_ss=7a22e&oh=00_AQL4Vqw4oYk7zYMGH9_MMiUZILDa-KmFmPYPGtO2io10DQ&oe=6AAAD6D7'
     ],
+    video: 'https://res.cloudinary.com/rlxojjxq/video/upload/v1789198290/SaveClip.App_AQMyO6U3RD-evABGlQ7UJ83Vzgmqcnpfmp3mncPqi6HhTeblabdVYfEHyi0IGcecsAuVByufwUc7HzDsbVSYgV7B2BsjBkqHSowkBSw.mp4',
     ordre: 2,
     programme: [
       { horaire: '09h30 – 09h45', titre: 'Théorie' },
@@ -548,6 +555,8 @@ export const FORMATIONS: Formation[] = [
         titre: 'Pratique / manipulation & motifs simples',
       },
     ],
+    videoPoster: undefined,
+    galerie: false
   },
 ];
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getFormation, getFormations } from '@/lib/data';
@@ -17,6 +18,9 @@ export function generateMetadata({
   return { title: `${f.nom} — Palki`, description: f.resume };
 }
 
+const estEmbed = (url: string) =>
+  /youtube\.com|youtu\.be|vimeo\.com|player\./.test(url);
+
 export default function FormationDetail({
   params,
 }: {
@@ -30,6 +34,20 @@ export default function FormationDetail({
       <Link href="/formations" className="link-underline">
         <span aria-hidden>←</span> Toutes les formations
       </Link>
+
+      {/* ── Image hero ───────────────────────────────────── */}
+      {f.images && (
+        <div className="frame relative mt-8 aspect-[16/7] overflow-hidden">
+          <Image
+            src={f.images[0]}
+            alt={f.nom}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
 
       <div className="mt-10 grid gap-14 lg:grid-cols-[1.1fr,1fr]">
         {/* ── Présentation ─────────────────────────────────── */}
@@ -117,6 +135,59 @@ export default function FormationDetail({
           </div>
         </div>
       </div>
+
+      {/* ── Vidéo ────────────────────────────────────────── */}
+      {f.video && (
+        <section className="mt-20">
+          <p className="eyebrow">En vidéo</p>
+          <div className="frame mt-6 overflow-hidden">
+            {estEmbed(f.video) ? (
+              <div className="relative aspect-video">
+                <iframe
+                  src={f.video}
+                  title={`${f.nom} — vidéo`}
+                  className="absolute inset-0 h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <video
+                controls
+                preload="metadata"
+                poster={f.videoPoster}
+                className="aspect-video w-full bg-ink object-cover"
+              >
+                <source src={f.video} />
+                Votre navigateur ne prend pas en charge la lecture vidéo.
+              </video>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Galerie ──────────────────────────────────────── */}
+      {Array.isArray(f.galerie) && f.galerie.length > 0 && (
+        <section className="mt-20">
+          <p className="eyebrow">Galerie</p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {f.galerie.map((src, i) => (
+              <div
+                key={i}
+                className="frame group relative aspect-[4/5] overflow-hidden"
+              >
+                <Image
+                  src={src}
+                  alt={`${f.nom} — visuel ${i + 1}`}
+                  fill
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </article>
   );
 }

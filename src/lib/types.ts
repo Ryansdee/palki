@@ -95,6 +95,8 @@ export interface FormationEtape {
 }
 
 export interface Formation {
+  videoPoster: string | undefined;
+  galerie: boolean;
   slug: string; // "epilation-au-fil" | "henne"
   nom: string;
   resume: string; // phrase courte (cartes)
@@ -104,6 +106,7 @@ export interface Formation {
   kit?: string; // mention kit de démarrage
   remarque?: string;
   images: string[]; // une ou plusieurs images (carousel si plusieurs)
+  video?: string; // URL d'une vidéo (YouTube, Vimeo, etc.) 
   programme: FormationEtape[];
   ordre: number;
 }

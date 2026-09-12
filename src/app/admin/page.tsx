@@ -16,6 +16,11 @@ const CARDS = [
     desc: 'Créer des réductions en % ou en €, activables en un clic.',
   },
   {
+    href: '/admin/galeries',
+    title: 'Photos galeries',
+    desc: 'Ajouter ou supprimer les photos affichées sur le site.',
+  },
+  {
     href: '/admin/disponibilites',
     title: 'Disponibilités',
     desc: 'Définir vos horaires d’ouverture, jour par jour.',

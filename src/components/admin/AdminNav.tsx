@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/admin', label: 'Tableau de bord' },
   { href: '/admin/tarifs', label: 'Tarifs' },
   { href: '/admin/promotions', label: 'Promotions' },
+  { href: '/admin/galeries', label: 'Galeries' },
   { href: '/admin/disponibilites', label: 'Disponibilités' },
   { href: '/admin/reservations', label: 'Réservations' },
 ];
