@@ -10,6 +10,49 @@ type Photo = {
   uploadedAt: string;
 };
 
+// Compresse une image côté client avant upload : redimensionne à maxWidth px
+// de large max et ré-encode en JPEG. Évite d'envoyer des fichiers lourds à
+// l'API (limite de taille des fonctions serverless).
+async function compressImage(
+  file: File,
+  maxWidth = 1600,
+  quality = 0.8
+): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+
+  const dataUrl = await new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+
+  const scale = Math.min(1, maxWidth / img.width);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return file;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob | null>((res) =>
+    canvas.toBlob(res, 'image/jpeg', quality)
+  );
+  if (!blob || blob.size >= file.size) return file;
+
+  return new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', {
+    type: 'image/jpeg',
+  });
+}
+
 export default function AdminGaleries() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +81,10 @@ export default function AdminGaleries() {
     setError('');
     try {
       const fd = new FormData();
-      Array.from(files).forEach((f) => fd.append('files', f));
+      const compressed = await Promise.all(
+        Array.from(files).map((f) => compressImage(f))
+      );
+      compressed.forEach((f) => fd.append('files', f));
       fd.append('title', title);
       const res = await fetch('/api/galeries', { method: 'POST', body: fd });
       if (!res.ok) {
@@ -74,11 +120,8 @@ export default function AdminGaleries() {
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-slate-900">Photos galeries</h1>
         <p className="mt-1 max-w-lg text-sm leading-relaxed text-slate-500">
-          Ajoutez vos photos. Elles sont enregistrées dans{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
-            public/images/galeries
-          </code>{' '}
-          et listées dans un fichier JSON.
+          Ajoutez vos photos. Elles sont compressées automatiquement avant
+          l’envoi, puis enregistrées sur l’hébergement.
         </p>
       </div>
 
@@ -129,7 +172,7 @@ export default function AdminGaleries() {
         {uploading && (
           <p className="mt-3 flex items-center gap-2 text-sm text-indigo-600">
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
-            Envoi en cours…
+            Compression et envoi en cours…
           </p>
         )}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
