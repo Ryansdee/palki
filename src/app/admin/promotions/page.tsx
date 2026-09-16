@@ -11,6 +11,8 @@ import {
 } from '@/lib/data';
 import type { Service, Promotion, PromotionType } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 const input =
   'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100';
 
@@ -31,10 +33,10 @@ export default function AdminPromotions() {
   const [promos, setPromos] = useState<Promotion[]>([]);
   const [form, setForm] = useState(vide);
 
-  const load = () => getPromotions('').then(setPromos);
+  const load = () => getPromotions(ORG_ID, false).then(setPromos);
 
   useEffect(() => {
-    getServices('').then((s) => s.length && setServices(s));
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
     load();
   }, []);
 
@@ -43,7 +45,7 @@ export default function AdminPromotions() {
 
   async function ajouter() {
     if (!form.titre) return;
-    await addPromotion(form.titre, form);
+    await addPromotion(ORG_ID, form);
     setForm(vide);
     await load();
   }
