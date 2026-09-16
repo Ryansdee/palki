@@ -41,8 +41,9 @@ export const JOURS = [
 export const DEFAULT_SETTINGS: Settings = {
   adresse: 'Av. de la Couronne 227, 1050 Ixelles (Bâtiment L, 1er étage)',
   telephone: '32485464024',
-  email: '',
-  instagram: '',
+  email: 'contact@palki.be',
+  instagram: 'https://www.instagram.com/palki__au_fil_de_la_beaute?utm_source=qr',
+  tiktok: 'https://www.tiktok.com/@palki7684?_r=1&_t=ZN-99EebqmDcsI',
 };
 
 export const DEFAULT_SERVICES: Service[] = [

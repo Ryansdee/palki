@@ -86,6 +86,7 @@ export interface Settings {
   telephone: string;
   email?: string;
   instagram?: string;
+  tiktok?: string;
 }
 
 // ── Formations ────────────────────────────────────────────────────────
