@@ -66,66 +66,130 @@ export default function AdminGaleries() {
   }
 
   return (
-    <div>
-      <p className="eyebrow">Administration</p>
-      <h1 className="mt-3 font-display text-4xl text-ink">Photos galeries</h1>
-      <p className="mt-2 max-w-lg text-sm leading-relaxed text-ink/60">
-        Ajoutez vos photos. Elles sont enregistrées dans{' '}
-        <code>public/images/galeries</code> et listées dans un fichier JSON.
-      </p>
+    <div className="mx-auto max-w-5xl">
+      {/* Header */}
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          Administration
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Photos galeries</h1>
+        <p className="mt-1 max-w-lg text-sm leading-relaxed text-slate-500">
+          Ajoutez vos photos. Elles sont enregistrées dans{' '}
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+            public/images/galeries
+          </code>{' '}
+          et listées dans un fichier JSON.
+        </p>
+      </div>
 
-      <div className="frame mt-8 bg-cloud px-7 py-8">
-        <label className="block text-sm text-ink/70">
+      {/* Upload */}
+      <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+        <label className="block text-sm font-medium text-slate-700">
           Titre (optionnel)
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex. Salon, soins, ambiance…"
-            className="mt-2 w-full border border-sand bg-white px-4 py-2 text-sm text-ink outline-none focus:border-plum"
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           />
         </label>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          disabled={uploading}
-          onChange={(e) => handleUpload(e.target.files)}
-          className="mt-4 block w-full text-sm text-ink/70 file:mr-4 file:border file:border-mauve/40 file:bg-porcelain file:px-4 file:py-2 file:text-sm file:text-ink hover:file:border-plum disabled:opacity-50"
-        />
+        <label
+          className={`mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-6 py-10 text-center transition-colors hover:border-indigo-400 hover:bg-indigo-50/40 ${
+            uploading ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-8 w-8 text-slate-400"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+          </svg>
+          <span className="text-sm font-medium text-slate-700">
+            Cliquez pour choisir des images
+          </span>
+          <span className="text-xs text-slate-400">PNG, JPG — plusieurs fichiers possibles</span>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={uploading}
+            onChange={(e) => handleUpload(e.target.files)}
+            className="hidden"
+          />
+        </label>
 
-        {uploading && <p className="mt-3 text-sm text-plum">Envoi en cours…</p>}
+        {uploading && (
+          <p className="mt-3 flex items-center gap-2 text-sm text-indigo-600">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-indigo-200 border-t-indigo-600" />
+            Envoi en cours…
+          </p>
+        )}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </div>
 
-      <div className="mt-12">
+      {/* Grille */}
+      <div className="mt-10">
         {loading ? (
-          <p className="text-sm text-ink/50">Chargement…</p>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
+              >
+                <div className="aspect-[4/3] animate-pulse bg-slate-100" />
+                <div className="px-4 py-3">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-slate-100" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : photos.length === 0 ? (
-          <p className="text-sm text-ink/50">Aucune photo pour le moment.</p>
+          <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-12 text-center text-sm text-slate-400">
+            Aucune photo pour le moment.
+          </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((p) => (
-              <div key={p.id} className="frame group overflow-hidden bg-cloud">
+              <div
+                key={p.id}
+                className="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition-shadow hover:shadow-md"
+              >
                 <div className="aspect-[4/3] overflow-hidden">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={p.url}
                     alt={p.title || 'Photo galerie'}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <div className="flex items-center justify-between px-4 py-3">
-                  <span className="truncate text-sm text-ink/70">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <span className="truncate text-sm text-slate-600">
                     {p.title || p.filename}
                   </span>
                   <button
                     onClick={() => handleDelete(p.id)}
-                    className="ml-3 shrink-0 text-sm text-ink/40 transition-colors hover:text-red-600"
+                    className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                    aria-label="Supprimer"
                   >
-                    Supprimer
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M10 11v6M14 11v6" />
+                    </svg>
                   </button>
                 </div>
               </div>

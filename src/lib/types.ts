@@ -43,6 +43,7 @@ export interface Creneau {
 // Un document par jour dans la collection "horaires" (id = "lundi", ...).
 // Sert de SEMAINE TYPE : repli pour toute semaine sans horaires propres.
 export interface HoraireJour {
+  surRdv: any;
   jour: string; // "lundi" ... "dimanche"
   ferme: boolean;
   creneaux: Creneau[];

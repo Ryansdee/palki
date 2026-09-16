@@ -14,6 +14,8 @@ import {
 } from '@/lib/data';
 import type { Service, Tarif, Promotion } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 export default function ServiceDetail() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -24,9 +26,9 @@ export default function ServiceDetail() {
 
   useEffect(() => {
     if (!slug) return;
-    getService(slug).then(setService);
-    getTarifsByService(slug).then(setTarifs);
-    getPromotions().then(setPromos);
+    getService(ORG_ID, slug).then(setService);
+    getTarifsByService(ORG_ID, slug).then(setTarifs);
+    getPromotions(ORG_ID).then(setPromos);
   }, [slug]);
 
   if (service === undefined) {

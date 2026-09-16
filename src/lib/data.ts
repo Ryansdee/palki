@@ -40,7 +40,7 @@ export const JOURS = [
 
 export const DEFAULT_SETTINGS: Settings = {
   adresse: 'Av. de la Couronne 227, 1050 Ixelles (Bâtiment L, 1er étage)',
-  telephone: '0485 46 40 24',
+  telephone: '32485464024',
   email: '',
   instagram: '',
 };
@@ -103,15 +103,21 @@ export const DEFAULT_TARIFS: Omit<Tarif, 'id'>[] = [
 export const DEFAULT_HORAIRES: HoraireJour[] = JOURS.map((jour) => ({
   jour,
   ferme: jour === 'dimanche',
+  surRdv: false,
   creneaux:
     jour === 'dimanche' ? [] : [{ debut: '10:00', fin: '18:00' }],
 }));
 
 // ── Lecture (public) ──────────────────────────────────────────────────
+// Toutes les lectures sont scopées par orgId. Le champ orgId n'est jamais
+// renvoyé dans les objets métier (on le retire au mapping) pour ne pas
+// polluer les types existants.
 
-export async function getServices(): Promise<Service[]> {
+export async function getServices(orgId: string): Promise<Service[]> {
   try {
-    const snap = await getDocs(collection(db, 'services'));
+    const snap = await getDocs(
+      query(collection(db, 'services'), where('orgId', '==', orgId))
+    );
     if (snap.empty) return DEFAULT_SERVICES;
     return snap.docs
       .map((d) => d.data() as Service)
@@ -122,9 +128,12 @@ export async function getServices(): Promise<Service[]> {
   }
 }
 
-export async function getService(slug: string): Promise<Service | null> {
+export async function getService(
+  orgId: string,
+  slug: string
+): Promise<Service | null> {
   try {
-    const ref = doc(db, 'services', slug);
+    const ref = doc(db, 'services', `${orgId}_${slug}`);
     const snap = await getDoc(ref);
     if (snap.exists()) return snap.data() as Service;
   } catch {
@@ -133,9 +142,15 @@ export async function getService(slug: string): Promise<Service | null> {
   return DEFAULT_SERVICES.find((s) => s.slug === slug) ?? null;
 }
 
-export async function getTarifs(): Promise<Tarif[]> {
+export async function getTarifs(orgId: string): Promise<Tarif[]> {
   try {
-    const snap = await getDocs(query(collection(db, 'tarifs'), orderBy('ordre')));
+    const snap = await getDocs(
+      query(
+        collection(db, 'tarifs'),
+        where('orgId', '==', orgId),
+        orderBy('ordre')
+      )
+    );
     if (snap.empty)
       return DEFAULT_TARIFS.map((t, i) => ({ ...t, id: `default-${i}` }));
     return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Tarif, 'id'>) }));
@@ -144,14 +159,22 @@ export async function getTarifs(): Promise<Tarif[]> {
   }
 }
 
-export async function getTarifsByService(slug: string): Promise<Tarif[]> {
-  const all = await getTarifs();
+export async function getTarifsByService(
+  orgId: string,
+  slug: string
+): Promise<Tarif[]> {
+  const all = await getTarifs(orgId);
   return all.filter((t) => t.serviceSlug === slug).sort((a, b) => a.ordre - b.ordre);
 }
 
-export async function getPromotions(actifOnly = true): Promise<Promotion[]> {
+export async function getPromotions(
+  orgId: string,
+  actifOnly = true
+): Promise<Promotion[]> {
   try {
-    const snap = await getDocs(collection(db, 'promotions'));
+    const snap = await getDocs(
+      query(collection(db, 'promotions'), where('orgId', '==', orgId))
+    );
     let promos = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Promotion, 'id'>) }));
     if (actifOnly) promos = promos.filter(isPromoActive);
     return promos;
@@ -160,12 +183,16 @@ export async function getPromotions(actifOnly = true): Promise<Promotion[]> {
   }
 }
 
-export async function getHoraires(): Promise<HoraireJour[]> {
+export async function getHoraires(orgId: string): Promise<HoraireJour[]> {
   try {
-    const snap = await getDocs(collection(db, 'horaires'));
+    const snap = await getDocs(
+      query(collection(db, 'horaires'), where('orgId', '==', orgId))
+    );
     if (snap.empty) return DEFAULT_HORAIRES;
-    const byId = new Map(snap.docs.map((d) => [d.id, d.data() as HoraireJour]));
-    return JOURS.map((j) => byId.get(j) ?? { jour: j, ferme: true, creneaux: [] });
+    const byId = new Map(snap.docs.map((d) => [(d.data() as HoraireJour).jour, d.data() as HoraireJour]));
+    return JOURS.map(
+      (j) => byId.get(j) ?? { jour: j, ferme: true, surRdv: false, creneaux: [] }
+    );
   } catch {
     return DEFAULT_HORAIRES;
   }
@@ -200,12 +227,16 @@ export function datesSemaine(lundi: string): string[] {
   });
 }
 
+// Id de doc semaine scopé par org.
+const semaineId = (orgId: string, lundi: string) => `${orgId}_${lundi}`;
+
 // Horaires propres à une semaine, ou null si la cliente n'en a pas défini.
 export async function getSemaineOverride(
+  orgId: string,
   lundi: string
 ): Promise<HoraireJour[] | null> {
   try {
-    const snap = await getDoc(doc(db, 'semaines', lundi));
+    const snap = await getDoc(doc(db, 'semaines', semaineId(orgId, lundi)));
     if (snap.exists()) return (snap.data() as SemaineHoraire).jours;
   } catch {
     /* repli */
@@ -213,33 +244,46 @@ export async function getSemaineOverride(
   return null;
 }
 
-export const saveSemaine = (lundi: string, jours: HoraireJour[]) =>
-  setDoc(doc(db, 'semaines', lundi), { lundi, jours } as SemaineHoraire);
+export const saveSemaine = (orgId: string, lundi: string, jours: HoraireJour[]) =>
+  setDoc(doc(db, 'semaines', semaineId(orgId, lundi)), {
+    orgId,
+    lundi,
+    jours,
+  } as SemaineHoraire & { orgId: string });
 
-export const deleteSemaine = (lundi: string) =>
-  deleteDoc(doc(db, 'semaines', lundi));
+export const deleteSemaine = (orgId: string, lundi: string) =>
+  deleteDoc(doc(db, 'semaines', semaineId(orgId, lundi)));
 
 // Horaires effectifs d'une semaine (override si défini, sinon semaine type).
 export async function getHorairesSemaine(
+  orgId: string,
   lundi: string
 ): Promise<{ jours: HoraireJour[]; personnalisee: boolean }> {
-  const override = await getSemaineOverride(lundi);
+  const override = await getSemaineOverride(orgId, lundi);
   if (override) return { jours: override, personnalisee: true };
-  return { jours: await getHoraires(), personnalisee: false };
+  return { jours: await getHoraires(orgId), personnalisee: false };
 }
 
 // Horaires effectifs d'un jour précis — utilisé par la prise de rendez-vous.
-export async function getHoraireForDate(date: string): Promise<HoraireJour> {
-  const { jours } = await getHorairesSemaine(lundiDeLaSemaine(date));
+export async function getHoraireForDate(
+  orgId: string,
+  date: string
+): Promise<HoraireJour> {
+  const { jours } = await getHorairesSemaine(orgId, lundiDeLaSemaine(date));
   const nom = JOURS[(new Date(date + 'T00:00:00').getDay() + 6) % 7];
   return (
-    jours.find((h) => h.jour === nom) ?? { jour: nom, ferme: true, creneaux: [] }
+    jours.find((h) => h.jour === nom) ?? {
+      jour: nom,
+      ferme: true,
+      surRdv: false,
+      creneaux: [],
+    }
   );
 }
 
-export async function getSettings(): Promise<Settings> {
+export async function getSettings(orgId: string): Promise<Settings> {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'general'));
+    const snap = await getDoc(doc(db, 'settings', orgId));
     if (snap.exists()) return snap.data() as Settings;
   } catch {
     /* repli */
@@ -301,23 +345,32 @@ export function formatEuro(n: number): string {
 }
 
 // ── Écriture (admin) ──────────────────────────────────────────────────
+// Chaque écriture porte orgId : c'est ce que les règles Firestore vérifient
+// (request.resource.data.orgId == myOrgId()). Les docs à id déterministe
+// (services, horaires) sont préfixés par orgId pour éviter les collisions
+// entre tenants.
 
-export const saveService = (s: Service) => setDoc(doc(db, 'services', s.slug), s);
-export const deleteService = (slug: string) => deleteDoc(doc(db, 'services', slug));
+export const saveService = (orgId: string, s: Service) =>
+  setDoc(doc(db, 'services', `${orgId}_${s.slug}`), { ...s, orgId });
+export const deleteService = (orgId: string, slug: string) =>
+  deleteDoc(doc(db, 'services', `${orgId}_${slug}`));
 
-export const addTarif = (t: Omit<Tarif, 'id'>) => addDoc(collection(db, 'tarifs'), t);
+export const addTarif = (orgId: string, t: Omit<Tarif, 'id'>) =>
+  addDoc(collection(db, 'tarifs'), { ...t, orgId });
 export const updateTarif = (id: string, t: Partial<Tarif>) =>
   updateDoc(doc(db, 'tarifs', id), t);
 export const deleteTarif = (id: string) => deleteDoc(doc(db, 'tarifs', id));
 
-export const addPromotion = (p: Omit<Promotion, 'id'>) =>
-  addDoc(collection(db, 'promotions'), p);
+export const addPromotion = (orgId: string, p: Omit<Promotion, 'id'>) =>
+  addDoc(collection(db, 'promotions'), { ...p, orgId });
 export const updatePromotion = (id: string, p: Partial<Promotion>) =>
   updateDoc(doc(db, 'promotions', id), p);
 export const deletePromotion = (id: string) => deleteDoc(doc(db, 'promotions', id));
 
-export const saveHoraire = (h: HoraireJour) => setDoc(doc(db, 'horaires', h.jour), h);
-export const saveSettings = (s: Settings) => setDoc(doc(db, 'settings', 'general'), s);
+export const saveHoraire = (orgId: string, h: HoraireJour) =>
+  setDoc(doc(db, 'horaires', `${orgId}_${h.jour}`), { ...h, orgId });
+export const saveSettings = (orgId: string, s: Settings) =>
+  setDoc(doc(db, 'settings', orgId), { ...s, orgId });
 
 // ── Réservations & occupation ─────────────────────────────────────────
 // La collection "occupation" ne contient aucune donnée personnelle : elle
@@ -325,20 +378,29 @@ export const saveSettings = (s: Settings) => setDoc(doc(db, 'settings', 'general
 // client vivent dans "reservations", réservée à l'admin.
 
 export async function createReservation(
+  orgId: string,
   r: Omit<Reservation, 'id' | 'occupationId'>
 ): Promise<void> {
   const occ = await addDoc(collection(db, 'occupation'), {
+    orgId,
     date: r.date,
     heure: r.heure,
     dureeMin: r.dureeMin,
   });
-  await addDoc(collection(db, 'reservations'), { ...r, occupationId: occ.id });
+  await addDoc(collection(db, 'reservations'), { ...r, orgId, occupationId: occ.id });
 }
 
-export async function getOccupationForDate(date: string): Promise<Occupation[]> {
+export async function getOccupationForDate(
+  orgId: string,
+  date: string
+): Promise<Occupation[]> {
   try {
     const snap = await getDocs(
-      query(collection(db, 'occupation'), where('date', '==', date))
+      query(
+        collection(db, 'occupation'),
+        where('orgId', '==', orgId),
+        where('date', '==', date)
+      )
     );
     return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Occupation) }));
   } catch {
@@ -346,9 +408,11 @@ export async function getOccupationForDate(date: string): Promise<Occupation[]> 
   }
 }
 
-export async function getReservations(): Promise<Reservation[]> {
+export async function getReservations(orgId: string): Promise<Reservation[]> {
   try {
-    const snap = await getDocs(collection(db, 'reservations'));
+    const snap = await getDocs(
+      query(collection(db, 'reservations'), where('orgId', '==', orgId))
+    );
     return snap.docs
       .map((d) => ({ id: d.id, ...(d.data() as Reservation) }))
       .sort((a, b) => (a.date + a.heure < b.date + b.heure ? 1 : -1));
@@ -393,13 +457,14 @@ function toHHMM(min: number): string {
 
 // Retourne les heures de début possibles pour une prestation d'une durée donnée,
 // selon les horaires du jour et en retirant les créneaux déjà réservés.
+// Un jour fermé OU sur rendez-vous ne génère aucun créneau automatique.
 export function creneauxDisponibles(
   horaire: HoraireJour,
   dureeMin: number,
   occupations: { heure: string; dureeMin: number }[],
   pas = 15
 ): string[] {
-  if (horaire.ferme) return [];
+  if (horaire.ferme || horaire.surRdv) return [];
   const occupes = occupations.map((r) => ({
     debut: toMin(r.heure),
     fin: toMin(r.heure) + r.dureeMin,
@@ -452,7 +517,8 @@ export async function getGalerie(): Promise<Photo[]> {
   }
 }
 
-export const addPhoto = (p: Omit<Photo, 'id'>) => addDoc(collection(db, 'galerie'), p);
+export const addPhoto = (orgId: string, p: Omit<Photo, 'id'>) =>
+  addDoc(collection(db, 'galerie'), { ...p, orgId });
 export const deletePhoto = (id: string) => deleteDoc(doc(db, 'galerie', id));
 
 // ── Formations ────────────────────────────────────────────────────────
@@ -567,16 +633,18 @@ export const getFormation = (slug: string): Formation | null =>
   FORMATIONS.find((f) => f.slug === slug) ?? null;
 
 // ── Initialisation (bouton admin) ─────────────────────────────────────
-// Écrit le contenu de départ dans Firestore. N'écrase pas les tarifs déjà
-// présents (ajoute seulement s'il n'y en a pas), mais (ré)écrit services,
-// horaires et settings de base.
-export async function seedDefaults(): Promise<void> {
-  for (const s of DEFAULT_SERVICES) await saveService(s);
-  for (const h of DEFAULT_HORAIRES) await saveHoraire(h);
-  await saveSettings(DEFAULT_SETTINGS);
+// Écrit le contenu de départ dans Firestore, scopé à l'org. N'écrase pas les
+// tarifs déjà présents (ajoute seulement s'il n'y en a pas), mais (ré)écrit
+// services, horaires et settings de base.
+export async function seedDefaults(orgId: string): Promise<void> {
+  for (const s of DEFAULT_SERVICES) await saveService(orgId, s);
+  for (const h of DEFAULT_HORAIRES) await saveHoraire(orgId, h);
+  await saveSettings(orgId, DEFAULT_SETTINGS);
 
-  const existing = await getDocs(collection(db, 'tarifs'));
+  const existing = await getDocs(
+    query(collection(db, 'tarifs'), where('orgId', '==', orgId))
+  );
   if (existing.empty) {
-    for (const t of DEFAULT_TARIFS) await addTarif(t);
+    for (const t of DEFAULT_TARIFS) await addTarif(orgId, t);
   }
 }

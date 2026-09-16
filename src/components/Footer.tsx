@@ -6,12 +6,14 @@ import { useEffect, useState } from 'react';
 import { getSettings, DEFAULT_SETTINGS } from '@/lib/data';
 import type { Settings } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 export default function Footer() {
   const pathname = usePathname();
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
-    getSettings().then(setSettings);
+    getSettings(ORG_ID).then(setSettings);
   }, []);
 
   if (pathname.startsWith('/admin')) return null;

@@ -5,11 +5,13 @@ import ServiceCard from '@/components/ServiceCard';
 import { getServices, DEFAULT_SERVICES } from '@/lib/data';
 import type { Service } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 export default function SoinsPage() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
   }, []);
 
   return (

@@ -15,13 +15,24 @@ import type { Service, HoraireJour } from '@/lib/types';
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const jourActuel = () => JOURS[(new Date().getDay() + 6) % 7];
 
+// Org du site public. Repli sur l'org Palki si la variable d'env n'est pas
+// définie (mono-institut). Pour du multi-domaine, résous par host.
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
+// Texte affiché pour un jour donné (ouvert avec plages / sur RDV / fermé).
+const libelleHoraire = (h: HoraireJour): string => {
+  if (h.surRdv) return 'Sur rendez-vous';
+  if (h.ferme || h.creneaux.length === 0) return 'Fermé';
+  return h.creneaux.map((c) => `${c.debut} – ${c.fin}`).join(', ');
+};
+
 export default function Home() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [horaires, setHoraires] = useState<HoraireJour[]>(DEFAULT_HORAIRES);
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
-    getHoraires().then((h) => h.length && setHoraires(h));
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
+    getHoraires(ORG_ID).then((h) => h.length && setHoraires(h));
   }, []);
 
   const today = jourActuel();
@@ -130,11 +141,7 @@ export default function Home() {
                       )}
                     </span>
                     <span className="font-display text-lg">
-                      {h.ferme || h.creneaux.length === 0
-                        ? 'Fermé'
-                        : h.creneaux
-                            .map((c) => `${c.debut} – ${c.fin}`)
-                            .join(', ')}
+                      {libelleHoraire(h)}
                     </span>
                   </li>
                 );

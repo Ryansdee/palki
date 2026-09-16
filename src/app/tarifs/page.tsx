@@ -13,15 +13,17 @@ import {
 } from '@/lib/data';
 import type { Service, Tarif, Promotion } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 export default function TarifsPage() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [tarifs, setTarifs] = useState<Tarif[]>([]);
   const [promos, setPromos] = useState<Promotion[]>([]);
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
-    getTarifs().then(setTarifs);
-    getPromotions().then(setPromos);
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
+    getTarifs(ORG_ID).then(setTarifs);
+    getPromotions(ORG_ID).then(setPromos);
   }, []);
 
   return (

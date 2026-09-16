@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  getServices,
   getTarifs,
   addTarif,
   updateTarif,
@@ -12,7 +11,7 @@ import {
 import type { Service, Tarif } from '@/lib/types';
 
 const input =
-  'w-full border border-sand bg-porcelain px-3 py-2 text-sm outline-none focus:border-plum';
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100';
 
 export default function AdminTarifs() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
@@ -24,10 +23,12 @@ export default function AdminTarifs() {
     dureeMin: 30,
   });
 
-  const load = () => getTarifs().then(setTarifs);
+  const load = (serviceList = services) =>
+    Promise.all(serviceList.map((service) => getTarifs(service.slug))).then(
+      (results) => setTarifs(results.flat()),
+    );
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
     load();
   }, []);
 
@@ -52,22 +53,49 @@ export default function AdminTarifs() {
   async function ajouter() {
     if (!nouveau.serviceSlug || !nouveau.nom) return;
     const ordre = tarifs.filter((t) => t.serviceSlug === nouveau.serviceSlug).length + 1;
-    await addTarif({ ...nouveau, ordre });
+    await addTarif(nouveau.serviceSlug, {
+      nom: nouveau.nom,
+      prix: nouveau.prix,
+      dureeMin: nouveau.dureeMin,
+      ordre,
+      serviceSlug: ''
+    });
     setNouveau({ serviceSlug: nouveau.serviceSlug, nom: '', prix: 0, dureeMin: 30 });
     await load();
   }
 
   return (
-    <div>
-      <p className="eyebrow">Administration</p>
-      <h1 className="mt-3 font-display text-4xl text-ink">Tarifs</h1>
+    <div className="mx-auto max-w-5xl">
+      {/* Header */}
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          Administration
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Tarifs</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Gérez les prestations, leurs prix et leur durée.
+        </p>
+      </div>
 
       {notSeeded && (
-        <p className="mt-6 border border-rose/50 bg-cloud px-4 py-3 text-sm text-ink/70">
-          Contenu de démonstration affiché. Cliquez sur «&nbsp;Initialiser le
-          contenu&nbsp;» sur le tableau de bord pour pouvoir enregistrer vos
-          modifications.
-        </p>
+        <div className="mt-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <svg
+            viewBox="0 0 24 24"
+            className="mt-0.5 h-5 w-5 shrink-0 text-amber-500"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+          </svg>
+          <p className="text-sm leading-relaxed text-amber-800">
+            Contenu de démonstration affiché. Cliquez sur «&nbsp;Initialiser le
+            contenu&nbsp;» sur le tableau de bord pour pouvoir enregistrer vos
+            modifications.
+          </p>
+        </div>
       )}
 
       {services.map((service) => {
@@ -75,51 +103,55 @@ export default function AdminTarifs() {
           .filter((t) => t.serviceSlug === service.slug)
           .sort((a, b) => a.ordre - b.ordre);
         return (
-          <section key={service.slug} className="mt-10">
-            <h2 className="font-display text-2xl text-ink">{service.nom}</h2>
-            <div className="mt-4 space-y-2">
+          <section key={service.slug} className="mt-8">
+            <h2 className="text-sm font-semibold text-slate-900">{service.nom}</h2>
+            <div className="mt-3 space-y-2">
               {items.map((t) => (
                 <div
                   key={t.id}
-                  className="grid items-center gap-2 border border-sand bg-cloud px-3 py-3 sm:grid-cols-[1fr_100px_100px_auto]"
+                  className="grid items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 transition-shadow hover:shadow-sm sm:grid-cols-[1fr_110px_110px_auto]"
                 >
                   <input
                     className={input}
                     value={t.nom}
                     onChange={(e) => edit(t.id, { nom: e.target.value })}
                   />
-                  <label className="flex items-center gap-1 text-sm text-ink/60">
+                  <div className="relative">
                     <input
-                      className={input}
+                      className={`${input} pr-7`}
                       type="number"
                       value={t.prix}
                       onChange={(e) =>
                         edit(t.id, { prix: Number(e.target.value) })
                       }
                     />
-                    €
-                  </label>
-                  <label className="flex items-center gap-1 text-sm text-ink/60">
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                      €
+                    </span>
+                  </div>
+                  <div className="relative">
                     <input
-                      className={input}
+                      className={`${input} pr-9`}
                       type="number"
                       value={t.dureeMin}
                       onChange={(e) =>
                         edit(t.id, { dureeMin: Number(e.target.value) })
                       }
                     />
-                    min
-                  </label>
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                      min
+                    </span>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => save(t)}
-                      className="border border-plum px-3 py-2 text-xs uppercase tracking-[0.15em] text-plum hover:bg-plum hover:text-cloud"
+                      className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
                     >
                       Enregistrer
                     </button>
                     <button
                       onClick={() => remove(t.id)}
-                      className="border border-sand px-3 py-2 text-xs uppercase tracking-[0.15em] text-ink/50 hover:border-rose hover:text-rose"
+                      className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
                     >
                       Suppr.
                     </button>
@@ -127,7 +159,9 @@ export default function AdminTarifs() {
                 </div>
               ))}
               {items.length === 0 && (
-                <p className="text-sm text-ink/50">Aucune prestation.</p>
+                <p className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
+                  Aucune prestation.
+                </p>
               )}
             </div>
           </section>
@@ -135,9 +169,9 @@ export default function AdminTarifs() {
       })}
 
       {/* Ajout */}
-      <section className="mt-14 border-t border-sand pt-8">
-        <p className="eyebrow">Ajouter une prestation</p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_100px_100px_auto]">
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-slate-50/60 p-6">
+        <p className="text-sm font-semibold text-slate-900">Ajouter une prestation</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_110px_110px_auto]">
           <select
             className={input}
             value={nouveau.serviceSlug}
@@ -176,7 +210,10 @@ export default function AdminTarifs() {
               setNouveau({ ...nouveau, dureeMin: Number(e.target.value) })
             }
           />
-          <button onClick={ajouter} className="btn-solid !px-5 !py-2">
+          <button
+            onClick={ajouter}
+            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+          >
             Ajouter
           </button>
         </div>

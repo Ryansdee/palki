@@ -5,14 +5,16 @@ import { useEffect, useState } from 'react';
 import { getPromotions, getServices, DEFAULT_SERVICES } from '@/lib/data';
 import type { Promotion, Service } from '@/lib/types';
 
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
 export default function PromotionsPage() {
   const [promos, setPromos] = useState<Promotion[]>([]);
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
-    getPromotions().then((p) => {
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
+    getPromotions(ORG_ID).then((p) => {
       setPromos(p);
       setLoaded(true);
     });

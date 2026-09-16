@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import {
   getServices,
   getTarifs,
+  getSettings,
   getHoraireForDate,
   getOccupationForDate,
   getPromotions,
@@ -14,8 +15,20 @@ import {
   creneauxDisponibles,
   createReservation,
   DEFAULT_SERVICES,
+  DEFAULT_SETTINGS,
 } from '@/lib/data';
-import type { Service, Tarif, Promotion } from '@/lib/types';
+import type { Service, Tarif, Promotion, Settings } from '@/lib/types';
+
+const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
+
+// Date locale "YYYY-MM-DD" (évite le décalage UTC de toISOString le soir).
+const isoLocal = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+
+// Numéro au format wa.me : ne garde que les chiffres (retire espaces, +, etc.).
+const toWhatsAppNumber = (tel: string): string => tel.replace(/\D/g, '');
 
 function Booking() {
   const searchParams = useSearchParams();
@@ -23,6 +36,7 @@ function Booking() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [tarifs, setTarifs] = useState<Tarif[]>([]);
   const [promos, setPromos] = useState<Promotion[]>([]);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
   const [serviceSlug, setServiceSlug] = useState('');
   const [tarifId, setTarifId] = useState('');
@@ -37,9 +51,10 @@ function Booking() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
-    getTarifs().then(setTarifs);
-    getPromotions().then(setPromos);
+    getServices(ORG_ID).then((s) => s.length && setServices(s));
+    getTarifs(ORG_ID).then(setTarifs);
+    getPromotions(ORG_ID).then(setPromos);
+    getSettings(ORG_ID).then(setSettings);
   }, []);
 
   useEffect(() => {
@@ -54,7 +69,7 @@ function Booking() {
   const tarif = tarifsService.find((t) => t.id === tarifId) ?? null;
   const promo = promoPourService(serviceSlug, promos);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoLocal(new Date());
 
   // Recalcule les créneaux quand la prestation ou la date changent
   useEffect(() => {
@@ -64,13 +79,37 @@ function Booking() {
       return;
     }
     setLoadingSlots(true);
-    Promise.all([getHoraireForDate(date), getOccupationForDate(date)]).then(
-      ([horaire, occ]) => {
-        setSlots(creneauxDisponibles(horaire, tarif.dureeMin, occ));
-        setLoadingSlots(false);
-      }
-    );
+    Promise.all([
+      getHoraireForDate(ORG_ID, date),
+      getOccupationForDate(ORG_ID, date),
+    ]).then(([horaire, occ]) => {
+      setSlots(creneauxDisponibles(horaire, tarif.dureeMin, occ));
+      setLoadingSlots(false);
+    });
   }, [tarif, date]);
+
+  // Message WhatsApp récapitulant la demande de rendez-vous.
+  function buildWhatsAppUrl(): string {
+    const prixFinal = tarif ? prixApresPromo(tarif.prix, promo) : 0;
+    const lignes = [
+      'Bonjour 👋',
+      'Je vous contacte depuis votre site internet pour une demande de rendez-vous.',
+      '',
+      `• Soin : ${tarif?.nom ?? ''}`,
+      `• Date : ${date} à ${heure}`,
+      `• Durée : ${tarif?.dureeMin ?? ''} min`,
+      `• Tarif : ${formatEuro(prixFinal)}`,
+      '',
+      `Nom : ${client.nom}`,
+      `Téléphone : ${client.tel}`,
+      `Email : ${client.email}`,
+    ];
+    if (client.note) lignes.push(`Remarque : ${client.note}`);
+    const numero = toWhatsAppNumber(settings.telephone);
+    return `https://wa.me/${numero}?text=${encodeURIComponent(
+      lignes.join('\n')
+    )}`;
+  }
 
   async function submit() {
     if (!tarif || !serviceSlug || !date || !heure) return;
@@ -81,7 +120,7 @@ function Booking() {
     setError('');
     setSending(true);
     try {
-      await createReservation({
+      await createReservation(ORG_ID, {
         serviceSlug,
         prestation: tarif.nom,
         date,
@@ -92,6 +131,8 @@ function Booking() {
         statut: 'en_attente',
         createdAt: Date.now(),
       });
+      // Ouvre WhatsApp avec la demande préremplie, puis affiche la confirmation.
+      window.open(buildWhatsAppUrl(), '_blank', 'noopener,noreferrer');
       setDone(true);
     } catch {
       setError("La réservation n'a pas pu être envoyée. Réessayez.");
@@ -111,6 +152,17 @@ function Booking() {
           {date} à {heure} a bien été enregistrée. Elle sera confirmée par
           l&apos;institut.
         </p>
+        <a
+          href={buildWhatsAppUrl()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 inline-flex items-center justify-center gap-2 bg-plum px-6 py-3 font-sans text-sm uppercase tracking-[0.15em] text-cloud transition-colors hover:bg-ink"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.887 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+          </svg>
+          Renvoyer sur WhatsApp
+        </a>
       </div>
     );
   }
@@ -279,7 +331,7 @@ function Booking() {
               disabled={sending}
               className="btn-solid mt-6 w-full disabled:opacity-50"
             >
-              {sending ? 'Envoi…' : 'Confirmer la demande'}
+              {sending ? 'Envoi…' : 'Confirmer et envoyer sur WhatsApp'}
             </button>
           </div>
         )}
@@ -294,4 +346,4 @@ export default function RendezVousPage() {
       <Booking />
     </Suspense>
   );
-} 
+}

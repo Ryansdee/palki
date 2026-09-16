@@ -12,7 +12,7 @@ import {
 import type { Service, Promotion, PromotionType } from '@/lib/types';
 
 const input =
-  'w-full border border-sand bg-porcelain px-3 py-2 text-sm outline-none focus:border-plum';
+  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-colors focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100';
 
 const vide = {
   titre: '',
@@ -31,10 +31,10 @@ export default function AdminPromotions() {
   const [promos, setPromos] = useState<Promotion[]>([]);
   const [form, setForm] = useState(vide);
 
-  const load = () => getPromotions(false).then(setPromos);
+  const load = () => getPromotions('').then(setPromos);
 
   useEffect(() => {
-    getServices().then((s) => s.length && setServices(s));
+    getServices('').then((s) => s.length && setServices(s));
     load();
   }, []);
 
@@ -43,13 +43,7 @@ export default function AdminPromotions() {
 
   async function ajouter() {
     if (!form.titre) return;
-    await addPromotion({
-      ...form,
-      valeur: Number(form.valeur),
-      debut: form.debut || undefined,
-      fin: form.fin || undefined,
-      tarifCible: form.tarifCible,
-    });
+    await addPromotion(form.titre, form);
     setForm(vide);
     await load();
   }
@@ -66,24 +60,32 @@ export default function AdminPromotions() {
   }
 
   return (
-    <div>
-      <p className="eyebrow">Administration</p>
-      <h1 className="mt-3 font-display text-4xl text-ink">Promotions</h1>
+    <div className="mx-auto max-w-5xl">
+      {/* Header */}
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          Administration
+        </p>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Promotions</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Créez des réductions et activez-les en un clic.
+        </p>
+      </div>
 
       <div className="mt-8 space-y-3">
         {promos.map((p) => (
           <div
             key={p.id}
-            className="flex flex-wrap items-center justify-between gap-4 border border-sand bg-cloud px-5 py-4"
+            className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-5 py-4 transition-shadow hover:shadow-sm"
           >
             <div>
               <div className="flex items-center gap-3">
-                <span className="font-display text-xl text-ink">{p.titre}</span>
-                <span className="font-display text-lg text-plum">
+                <span className="text-base font-semibold text-slate-900">{p.titre}</span>
+                <span className="inline-flex items-center rounded-md bg-indigo-50 px-2 py-0.5 text-sm font-semibold text-indigo-700">
                   {p.type === 'pourcentage' ? `-${p.valeur}%` : `-${p.valeur}€`}
                 </span>
               </div>
-              <p className="text-sm text-ink/60">
+              <p className="mt-1 text-sm text-slate-500">
                 {cibleNom(p.cible)}
                 {p.description ? ` · ${p.description}` : ''}
                 {p.debut || p.fin
@@ -94,17 +96,22 @@ export default function AdminPromotions() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => toggle(p)}
-                className={`px-3 py-2 text-xs uppercase tracking-[0.15em] ${
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   p.actif
-                    ? 'bg-plum text-cloud'
-                    : 'border border-sand text-ink/50'
+                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                    : 'border border-slate-200 text-slate-500 hover:bg-slate-50'
                 }`}
               >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    p.actif ? 'bg-emerald-500' : 'bg-slate-300'
+                  }`}
+                />
                 {p.actif ? 'Active' : 'Inactive'}
               </button>
               <button
                 onClick={() => remove(p.id)}
-                className="border border-sand px-3 py-2 text-xs uppercase tracking-[0.15em] text-ink/50 hover:border-rose hover:text-rose"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
               >
                 Suppr.
               </button>
@@ -112,12 +119,15 @@ export default function AdminPromotions() {
           </div>
         ))}
         {promos.length === 0 && (
-          <p className="text-sm text-ink/50">Aucune promotion pour l’instant.</p>
+          <p className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+            Aucune promotion pour l’instant.
+          </p>
         )}
       </div>
 
-      <section className="mt-14 border-t border-sand pt-8">
-        <p className="eyebrow">Nouvelle promotion</p>
+      {/* Nouvelle promotion */}
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-slate-50/60 p-6">
+        <p className="text-sm font-semibold text-slate-900">Nouvelle promotion</p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <input
             className={input}
@@ -164,26 +174,29 @@ export default function AdminPromotions() {
               }
             />
           </div>
-          <label className="text-sm text-ink/60">
+          <label className="text-sm text-slate-500">
             Début (optionnel)
             <input
-              className={input}
+              className={`${input} mt-1`}
               type="date"
               value={form.debut}
               onChange={(e) => setForm({ ...form, debut: e.target.value })}
             />
           </label>
-          <label className="text-sm text-ink/60">
+          <label className="text-sm text-slate-500">
             Fin (optionnel)
             <input
-              className={input}
+              className={`${input} mt-1`}
               type="date"
               value={form.fin}
               onChange={(e) => setForm({ ...form, fin: e.target.value })}
             />
           </label>
         </div>
-        <button onClick={ajouter} className="btn-solid mt-4">
+        <button
+          onClick={ajouter}
+          className="mt-5 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+        >
           Créer la promotion
         </button>
       </section>

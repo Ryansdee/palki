@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
 
@@ -16,6 +16,12 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Accès Firestore cohérent avec getAuthClient() : certains modules importent
+// getDbClient() plutôt que la constante db. Les deux renvoient la même instance.
+export function getDbClient(): Firestore {
+  return db;
+}
 
 // Auth initialisé paresseusement : getAuth() lève une erreur si la clé API
 // est absente, ce qui casserait le build tant que l'environnement n'est pas
