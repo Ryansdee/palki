@@ -64,7 +64,7 @@ export const DEFAULT_SERVICES: Service[] = [
     resume: "Henné naturel à base d'huiles essentielles.",
     description: '[slug — description Henné à compléter par la cliente]',
     image:
-      'https://images.unsplash.com/photo-1600180758890-6b94519a8ba6?w=1200&q=80',
+      'https://tresorsdusouk.com/cdn/shop/files/image-768x1024.jpg?v=1729523918&width=1445',
     ordre: 2,
     actif: true,
   },
