@@ -68,7 +68,9 @@ export default function Footer() {
         <div className="mx-auto flex max-w-content flex-col items-center justify-between gap-2 px-6 py-6 text-xs uppercase tracking-[0.2em] text-ink/50 sm:flex-row">
           <span>© 2024 - {new Date().getFullYear()} Palki</span>
           <span>Site web par <a href="https://ryansdee.netlify.app/" target="_blank" rel="noopener noreferrer" className="transition-colors underline hover:text-plum">Ryansdee</a></span>
-          <span>Au fil de la beauté</span>
+          <Link href="/mentions-legales" className="transition-colors hover:text-plum">
+            Mentions légales &amp; confidentialité
+          </Link>
         </div>
       </div>
     </footer>
