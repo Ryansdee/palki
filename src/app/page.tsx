@@ -149,42 +149,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Intro ─────────────────────────────────────────────── */}
-      <section className="mx-auto max-w-content px-6 py-24">
-        <div className="grid items-center gap-14 md:grid-cols-2">
-          <div className="relative">
-            <div className="frame p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://palki.be/wp-content/uploads/2022/08/image-1.png"
-                alt="https://palki.be/wp-content/uploads/2022/08/image-1.png"
-                className="aspect-[4/5] w-full object-cover"
-              />
-            </div>
-          </div>
-          <div>
-            <p className="eyebrow">Bienvenue</p>
-            <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
-              Un institut à votre image, au cœur d&apos;Ixelles
-            </h2>
-            <p className="mt-6 leading-relaxed text-ink/70">
-              Venez profiter d'un moment de beauté et de détente dans notre institut, où nous vous proposons des soins personnalisés pour révéler votre éclat naturel.
-            </p>
-            <p className="mt-4 leading-relaxed text-ink/70">
-              Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, notre équipe est là pour vous offrir une expérience unique et agréable.
-            </p>
-            <Link href="/soins" className="link-underline mt-8">
-              Lire plus <span aria-hidden>→</span>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* ── Disponibilités ────────────────────────────────────── */}
-      <section className="border-y border-sand bg-cloud">
+      <section id="disponibilites" className="scroll-mt-20 border-y border-sand bg-cloud">
         <div className="mx-auto grid max-w-content gap-12 px-6 py-20 md:grid-cols-[1fr,1.15fr] md:items-center">
           <div>
-            <p className="eyebrow">Horaires</p>
+            <p className="eyebrow">Cette semaine</p>
             <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
               Nos disponibilités
             </h2>
@@ -288,6 +257,37 @@ export default function Home() {
             </ul>
           </div>
           )}
+        </div>
+      </section>
+
+      {/* ── Intro ─────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-content px-6 py-24">
+        <div className="grid items-center gap-14 md:grid-cols-2">
+          <div className="relative">
+            <div className="frame p-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://palki.be/wp-content/uploads/2022/08/image-1.png"
+                alt="https://palki.be/wp-content/uploads/2022/08/image-1.png"
+                className="aspect-[4/5] w-full object-cover"
+              />
+            </div>
+          </div>
+          <div>
+            <p className="eyebrow">Bienvenue</p>
+            <h2 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
+              Un institut à votre image, au cœur d&apos;Ixelles
+            </h2>
+            <p className="mt-6 leading-relaxed text-ink/70">
+              Venez profiter d'un moment de beauté et de détente dans notre institut, où nous vous proposons des soins personnalisés pour révéler votre éclat naturel.
+            </p>
+            <p className="mt-4 leading-relaxed text-ink/70">
+              Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, notre équipe est là pour vous offrir une expérience unique et agréable.
+            </p>
+            <Link href="/soins" className="link-underline mt-8">
+              Lire plus <span aria-hidden>→</span>
+            </Link>
+          </div>
         </div>
       </section>
 
