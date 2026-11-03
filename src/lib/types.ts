@@ -56,7 +56,17 @@ export interface SemaineHoraire {
   jours: HoraireJour[]; // 7 entrées, ordre lundi → dimanche
 }
 
-export type StatutReservation = 'en_attente' | 'confirme' | 'annule';
+// Créneaux affichés pour une date précise (système « Mes disponibilités »).
+// Un document par date dans la collection "creneaux", id = `${orgId}_${date}`.
+// Quand une date a ce document, il remplace les plages horaires pour la prise
+// de RDV : seules ces heures de début sont proposées.
+export interface JourCreneaux {
+  date: string; // "YYYY-MM-DD"
+  heures: string[]; // heures de début proposées, ex. ["11:00", "11:30", …]
+  bloques: string[]; // heures barrées à la main (RDV pris par téléphone, etc.)
+}
+
+export type StatutReservation ='en_attente' | 'confirme' | 'annule';
 
 export interface Reservation {
   id?: string;

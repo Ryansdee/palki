@@ -22,6 +22,7 @@ import type {
   Occupation,
   Settings,
   Formation,
+  JourCreneaux,
 } from './types';
 
 export const JOURS = [
@@ -280,6 +281,132 @@ export async function getHoraireForDate(
       creneaux: [],
     }
   );
+}
+
+// ── Créneaux par date (« Mes disponibilités ») ────────────────────────
+// La cliente publie, date par date, la liste des heures de début proposées
+// (pas de 30 min par défaut). Une heure est « prise » (barrée) si elle est
+// bloquée à la main ou chevauchée par une réservation (collection occupation).
+
+export const PAS_CRENEAU = 30;
+
+const creneauxId = (orgId: string, date: string) => `${orgId}_${date}`;
+
+const trierHeures = (h: string[]) =>
+  Array.from(new Set(h)).sort((a, b) => toMin(a) - toMin(b));
+
+export async function getJourCreneaux(
+  orgId: string,
+  date: string
+): Promise<JourCreneaux | null> {
+  try {
+    const snap = await getDoc(doc(db, 'creneaux', creneauxId(orgId, date)));
+    if (snap.exists()) {
+      const d = snap.data() as JourCreneaux;
+      return { date: d.date, heures: d.heures ?? [], bloques: d.bloques ?? [] };
+    }
+  } catch {
+    /* repli */
+  }
+  return null;
+}
+
+// Créneaux des 7 jours d'une semaine (clé = date ISO, null si non défini).
+export async function getCreneauxSemaine(
+  orgId: string,
+  lundi: string
+): Promise<Record<string, JourCreneaux | null>> {
+  const dates = datesSemaine(lundi);
+  const jours = await Promise.all(dates.map((d) => getJourCreneaux(orgId, d)));
+  return Object.fromEntries(dates.map((d, i) => [d, jours[i]]));
+}
+
+// Prochaines dates publiées (aujourd'hui inclus), triées. Filtrage côté client
+// pour éviter un index composite (orgId + date).
+export async function getProchainsCreneaux(
+  orgId: string,
+  limite = 6
+): Promise<JourCreneaux[]> {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'creneaux'), where('orgId', '==', orgId))
+    );
+    const today = isoDate(new Date());
+    return snap.docs
+      .map((d) => d.data() as JourCreneaux)
+      .filter((j) => j.date >= today && (j.heures ?? []).length > 0)
+      .map((j) => ({ date: j.date, heures: j.heures, bloques: j.bloques ?? [] }))
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+      .slice(0, limite);
+  } catch {
+    return [];
+  }
+}
+
+export const saveJourCreneaux = (orgId: string, j: JourCreneaux) =>
+  setDoc(doc(db, 'creneaux', creneauxId(orgId, j.date)), {
+    orgId,
+    date: j.date,
+    heures: trierHeures(j.heures),
+    bloques: j.bloques.filter((b) => j.heures.includes(b)),
+  });
+
+export const deleteJourCreneaux = (orgId: string, date: string) =>
+  deleteDoc(doc(db, 'creneaux', creneauxId(orgId, date)));
+
+// Génère les heures de début de `debut` à `fin` inclus, tous les `pas` minutes.
+export function genererHeures(
+  debut: string,
+  fin: string,
+  pas = PAS_CRENEAU
+): string[] {
+  const out: string[] = [];
+  for (let t = toMin(debut); t <= toMin(fin); t += pas) out.push(toHHMM(t));
+  return out;
+}
+
+// Heures barrées : bloquées à la main ou chevauchées par une réservation.
+export function heuresPrises(
+  j: JourCreneaux,
+  occupations: { heure: string; dureeMin: number }[],
+  pas = PAS_CRENEAU
+): Set<string> {
+  const occ = occupations.map((o) => ({
+    debut: toMin(o.heure),
+    fin: toMin(o.heure) + o.dureeMin,
+  }));
+  const prises = new Set<string>();
+  for (const h of j.heures) {
+    const t = toMin(h);
+    if (j.bloques.includes(h) || occ.some((o) => t < o.fin && t + pas > o.debut))
+      prises.add(h);
+  }
+  return prises;
+}
+
+// Heures de début réservables pour une prestation : l'heure doit être libre et,
+// si la prestation dure plus d'un créneau, les créneaux suivants aussi.
+export function creneauxDepuisListe(
+  j: JourCreneaux,
+  dureeMin: number,
+  occupations: { heure: string; dureeMin: number }[],
+  pas = PAS_CRENEAU
+): string[] {
+  const prises = heuresPrises(j, occupations, pas);
+  const libres = new Set(j.heures.filter((h) => !prises.has(h)));
+  const besoin = Math.max(1, Math.ceil(dureeMin / pas));
+  return trierHeures(j.heures).filter((h) => {
+    for (let k = 0; k < besoin; k++) {
+      if (!libres.has(toHHMM(toMin(h) + k * pas))) return false;
+    }
+    return true;
+  });
+}
+
+// "11:30" → "11h30", "11:00" → "11h"
+export function formatHeure(hhmm: string): string {
+  const [h, m] = hhmm.split(':');
+  return `${Number(h)}h${m === '00' ? '' : m}`;
 }
 
 export async function getSettings(orgId: string): Promise<Settings> {

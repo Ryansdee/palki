@@ -7,6 +7,9 @@ service cloud.firestore {
     match /tarifs/{doc}     { allow read: if true; allow write: if request.auth != null; }
     match /promotions/{doc} { allow read: if true; allow write: if request.auth != null; }
     match /horaires/{doc}   { allow read: if true; allow write: if request.auth != null; }
+    match /semaines/{doc}   { allow read: if true; allow write: if request.auth != null; }
+    // Créneaux publiés par date (« Mes disponibilités ») — doc id `${orgId}_${date}`
+    match /creneaux/{doc}   { allow read: if true; allow write: if request.auth != null; }
     match /galerie/{doc}    { allow read: if true; allow write: if request.auth != null; }
     match /settings/{doc}   { allow read: if true; allow write: if request.auth != null; }
 

@@ -13,6 +13,9 @@ import {
   prixApresPromo,
   formatEuro,
   creneauxDisponibles,
+  creneauxDepuisListe,
+  getJourCreneaux,
+  formatHeure,
   createReservation,
   DEFAULT_SERVICES,
   DEFAULT_SETTINGS,
@@ -57,9 +60,17 @@ function Booking() {
     getSettings(ORG_ID).then(setSettings);
   }, []);
 
+  // Heure demandée depuis la page d'accueil (?date=…&heure=…), sélectionnée
+  // automatiquement dès qu'elle est disponible pour la prestation choisie.
+  const [heureVoulue, setHeureVoulue] = useState('');
+
   useEffect(() => {
     const s = searchParams.get('service');
     if (s) setServiceSlug(s);
+    const d = searchParams.get('date');
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) setDate(d);
+    const h = searchParams.get('heure');
+    if (h && /^\d{2}:\d{2}$/.test(h)) setHeureVoulue(h);
   }, [searchParams]);
 
   const tarifsService = useMemo(
@@ -80,12 +91,22 @@ function Booking() {
     }
     setLoadingSlots(true);
     Promise.all([
+      getJourCreneaux(ORG_ID, date),
       getHoraireForDate(ORG_ID, date),
       getOccupationForDate(ORG_ID, date),
-    ]).then(([horaire, occ]) => {
-      setSlots(creneauxDisponibles(horaire, tarif.dureeMin, occ));
+    ]).then(([jour, horaire, occ]) => {
+      // Créneaux publiés pour cette date → prioritaires sur les plages horaires.
+      const dispo = jour
+        ? creneauxDepuisListe(jour, tarif.dureeMin, occ)
+        : creneauxDisponibles(horaire, tarif.dureeMin, occ);
+      setSlots(dispo);
+      if (heureVoulue && dispo.includes(heureVoulue)) {
+        setHeure(heureVoulue);
+        setHeureVoulue('');
+      }
       setLoadingSlots(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tarif, date]);
 
   // Message WhatsApp récapitulant la demande de rendez-vous.
@@ -177,6 +198,12 @@ function Booking() {
         <h1 className="mt-4 font-display text-5xl text-ink sm:text-6xl">
           Prendre rendez-vous
         </h1>
+        {heureVoulue && date && (
+          <p className="mx-auto mt-6 inline-block border border-sand bg-cloud px-5 py-2 text-sm text-ink/70">
+            Créneau souhaité : le {date.split('-').reverse().join('/')} à{' '}
+            {formatHeure(heureVoulue)} — choisissez votre soin.
+          </p>
+        )}
       </header>
 
       <div className="mt-14 space-y-10">
@@ -283,7 +310,7 @@ function Booking() {
                         : 'border-sand text-ink hover:border-mauve'
                     }`}
                   >
-                    {s}
+                    {formatHeure(s)}
                   </button>
                 ))}
               </div>

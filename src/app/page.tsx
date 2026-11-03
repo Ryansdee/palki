@@ -6,13 +6,34 @@ import ServiceCard from '@/components/ServiceCard';
 import {
   getServices,
   DEFAULT_SERVICES,
-  getHoraires,
+  getHorairesSemaine,
+  lundiDeLaSemaine,
   DEFAULT_HORAIRES,
   getSettings,
   DEFAULT_SETTINGS,
+  getProchainsCreneaux,
+  getOccupationForDate,
+  heuresPrises,
+  formatHeure,
   JOURS,
 } from '@/lib/data';
-import type { Service, HoraireJour, Settings } from '@/lib/types';
+import type { Service, HoraireJour, Settings, JourCreneaux } from '@/lib/types';
+
+// "2026-11-03" → { court: "3/11", jour: "MARDI" }
+const dateCarte = (iso: string) => {
+  const d = new Date(iso + 'T00:00:00');
+  return {
+    court: `${d.getDate()}/${d.getMonth() + 1}`,
+    jour: JOURS[(d.getDay() + 6) % 7],
+  };
+};
+
+const telAffiche = (tel: string) => {
+  const n = tel.replace(/\D/g, '').replace(/^32/, '0');
+  return n.length === 10 ? `${n.slice(0, 4)}/${n.slice(4, 7)}.${n.slice(7)}` : tel;
+};
+
+type CarteDispo = { jour: JourCreneaux; prises: Set<string> };
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const jourActuel = () => JOURS[(new Date().getDay() + 6) % 7];
@@ -39,11 +60,20 @@ export default function Home() {
   const [services, setServices] = useState<Service[]>(DEFAULT_SERVICES);
   const [horaires, setHoraires] = useState<HoraireJour[]>(DEFAULT_HORAIRES);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [cartes, setCartes] = useState<CarteDispo[] | null>(null);
 
   useEffect(() => {
     getServices(ORG_ID).then((s) => s.length && setServices(s));
-    getHoraires(ORG_ID).then((h) => h.length && setHoraires(h));
+    getHorairesSemaine(ORG_ID, lundiDeLaSemaine()).then(
+      (r) => r.jours.length && setHoraires(r.jours)
+    );
     getSettings(ORG_ID).then(setSettings);
+    getProchainsCreneaux(ORG_ID, 6).then(async (jours) => {
+      const occ = await Promise.all(
+        jours.map((j) => getOccupationForDate(ORG_ID, j.date))
+      );
+      setCartes(jours.map((j, i) => ({ jour: j, prises: heuresPrises(j, occ[i]) })));
+    });
   }, []);
 
   const today = jourActuel();
@@ -167,6 +197,69 @@ export default function Home() {
             </Link>
           </div>
 
+          {cartes && cartes.length > 0 ? (
+            <div>
+              <p className="text-center font-display text-4xl italic text-plum sm:text-5xl">
+                Mes disponibilités
+              </p>
+              <div className="mx-auto mt-3 flex max-w-xs items-center gap-3 text-mauve">
+                <span className="h-px flex-1 bg-mauve/40" />
+                <span aria-hidden>♡</span>
+                <span className="h-px flex-1 bg-mauve/40" />
+              </div>
+
+              <div className="mt-8 space-y-4">
+                {cartes.map(({ jour, prises }) => {
+                  const { court, jour: nomJour } = dateCarte(jour.date);
+                  return (
+                    <div
+                      key={jour.date}
+                      className="flex items-stretch rounded-[28px] border border-mauve/40 bg-porcelain/60 px-5 py-5 shadow-[0_6px_20px_-12px_rgba(110,78,99,0.45)] sm:px-7"
+                    >
+                      <div className="flex w-20 shrink-0 flex-col items-center justify-center text-center sm:w-24">
+                        <span className="font-display text-4xl leading-none text-ink sm:text-5xl">
+                          {court}
+                        </span>
+                        <span className="mt-2 font-display text-xs uppercase italic tracking-[0.25em] text-ink/70">
+                          {nomJour}
+                        </span>
+                      </div>
+                      <div className="mx-4 w-px bg-mauve/40 sm:mx-6" />
+                      <p className="flex flex-1 flex-wrap items-center gap-x-1 gap-y-1 font-display text-lg leading-snug sm:text-xl">
+                        {jour.heures.map((h, i) => {
+                          const prise = prises.has(h);
+                          const sep = i < jour.heures.length - 1 ? ',' : '';
+                          return prise ? (
+                            <span key={h} className="text-ink/35" title="Déjà réservé">
+                              <span className="line-through decoration-[#c0392b] decoration-2">
+                                {formatHeure(h)}
+                              </span>
+                              {sep}
+                            </span>
+                          ) : (
+                            <Link
+                              key={h}
+                              href={`/rendez-vous?date=${jour.date}&heure=${h}`}
+                              className="text-ink transition-colors hover:text-plum"
+                              title="Réserver ce créneau"
+                            >
+                              {formatHeure(h)}
+                              {sep}
+                            </Link>
+                          );
+                        })}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 text-center font-display text-base italic text-ink/60">
+                <p>{settings.adresse}</p>
+                <p className="mt-1">{telAffiche(settings.telephone)}</p>
+              </div>
+            </div>
+          ) : (
           <div className="frame p-8">
             <ul>
               {horaires.map((h) => {
@@ -194,6 +287,7 @@ export default function Home() {
               })}
             </ul>
           </div>
+          )}
         </div>
       </section>
 
