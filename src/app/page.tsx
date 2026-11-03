@@ -11,7 +11,7 @@ import {
   DEFAULT_HORAIRES,
   getSettings,
   DEFAULT_SETTINGS,
-  getProchainsCreneaux,
+  getProchainesDisponibilites,
   getOccupationForDate,
   heuresPrises,
   formatHeure,
@@ -68,7 +68,7 @@ export default function Home() {
       (r) => r.jours.length && setHoraires(r.jours)
     );
     getSettings(ORG_ID).then(setSettings);
-    getProchainsCreneaux(ORG_ID, 6).then(async (jours) => {
+    getProchainesDisponibilites(ORG_ID, 6).then(async (jours) => {
       const occ = await Promise.all(
         jours.map((j) => getOccupationForDate(ORG_ID, j.date))
       );

@@ -343,6 +343,51 @@ export async function getProchainsCreneaux(
   }
 }
 
+// Dates affichées sur l'accueil : créneaux publiés en priorité, sinon heures
+// générées depuis les horaires d'ouverture (plages de la semaine, pas de 30 min).
+// Les jours fermés ou « sur RDV » sont ignorés, et les heures passées du jour aussi.
+export async function getProchainesDisponibilites(
+  orgId: string,
+  limite = 6,
+  horizon = 21
+): Promise<JourCreneaux[]> {
+  const publies = new Map(
+    (await getProchainsCreneaux(orgId, 100)).map((j) => [j.date, j])
+  );
+  const semaines = new Map<string, HoraireJour[]>();
+  const now = new Date();
+  const today = isoDate(now);
+  const maintenant = now.getHours() * 60 + now.getMinutes();
+  const out: JourCreneaux[] = [];
+
+  for (let i = 0; i < horizon && out.length < limite; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    const date = isoDate(d);
+
+    let jour: JourCreneaux | null = publies.get(date) ?? null;
+    if (!jour) {
+      const lundi = lundiDeLaSemaine(date);
+      if (!semaines.has(lundi)) {
+        semaines.set(lundi, (await getHorairesSemaine(orgId, lundi)).jours);
+      }
+      const nom = JOURS[(d.getDay() + 6) % 7];
+      const h = semaines.get(lundi)!.find((x) => x.jour === nom);
+      if (!h || h.ferme || h.surRdv) continue;
+      const heures = h.creneaux.flatMap((c) => {
+        const dernier = toMin(c.fin) - PAS_CRENEAU;
+        return dernier >= toMin(c.debut) ? genererHeures(c.debut, toHHMM(dernier)) : [];
+      });
+      jour = { date, heures: trierHeures(heures), bloques: [] };
+    }
+
+    const heures =
+      date === today ? jour.heures.filter((x) => toMin(x) > maintenant) : jour.heures;
+    if (heures.length) out.push({ ...jour, heures });
+  }
+  return out;
+}
+
 export const saveJourCreneaux = (orgId: string, j: JourCreneaux) =>
   setDoc(doc(db, 'creneaux', creneauxId(orgId, j.date)), {
     orgId,
