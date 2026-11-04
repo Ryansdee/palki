@@ -11,8 +11,8 @@ const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
 const EDITEUR = {
   nom: '[Palki]',
   forme: '[Indépendante en personne physique / SRL / …]',
-  bce: '[0xxx.xxx.xxx]',
-  tva: '[BE 0xxx.xxx.xxx — ou « non assujettie à la TVA (franchise) »]',
+  bce: '[0410.682.657]',
+  tva: '[BE 0410.682.657 — ou « non assujettie à la TVA (franchise) »]',
   email: 'contact@palki.be',
   conservationMois: 24, // durée de conservation des réservations
   miseAJour: '4 novembre 2026',
