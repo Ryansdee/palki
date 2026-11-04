@@ -53,6 +53,7 @@ export default function Footer() {
               ['/galerie', 'Galerie'],
               ['/promotions', 'Promotions'],
               ['/rendez-vous', 'Prendre rendez-vous'],
+              ['/avis', 'Avis clientes'],
             ].map(([href, label]) => (
               <li key={href}>
                 <Link href={href} className="transition-colors hover:text-plum">

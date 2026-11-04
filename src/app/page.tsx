@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ServiceCard from '@/components/ServiceCard';
+import Etoiles from '@/components/Etoiles';
+import CarteAvis from '@/components/CarteAvis';
 import {
   getServices,
   DEFAULT_SERVICES,
@@ -16,8 +18,10 @@ import {
   heuresPrises,
   formatHeure,
   JOURS,
+  getAvisPublies,
+  statsAvis
 } from '@/lib/data';
-import type { Service, HoraireJour, Settings, JourCreneaux } from '@/lib/types';
+import type { Service, HoraireJour, Settings, JourCreneaux, Avis } from '@/lib/types';
 
 // "2026-11-03" → { court: "3/11", jour: "MARDI" }
 const dateCarte = (iso: string) => {
@@ -61,6 +65,7 @@ export default function Home() {
   const [horaires, setHoraires] = useState<HoraireJour[]>(DEFAULT_HORAIRES);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [cartes, setCartes] = useState<CarteDispo[] | null>(null);
+  const [avis, setAvis] = useState<Avis[]>([]);
 
   useEffect(() => {
     getServices(ORG_ID).then((s) => s.length && setServices(s));
@@ -68,6 +73,7 @@ export default function Home() {
       (r) => r.jours.length && setHoraires(r.jours)
     );
     getSettings(ORG_ID).then(setSettings);
+    getAvisPublies(ORG_ID).then(setAvis);
     getProchainesDisponibilites(ORG_ID, 6).then(async (jours) => {
       const occ = await Promise.all(
         jours.map((j) => getOccupationForDate(ORG_ID, j.date))
@@ -311,7 +317,36 @@ export default function Home() {
           ))}
         </div>
       </section>
-
+                {/* ── Avis clientes ─────────────────────────────────────── */}
+      {avis.length > 0 && (() => {
+        const { moyenne, total } = statsAvis(avis);
+        return (
+          <section className="mx-auto mt-24 max-w-content px-6">
+            <div className="flex flex-wrap items-end justify-between gap-6 border-b border-sand pb-6">
+              <div>
+                <p className="eyebrow">Avis vérifiés</p>
+                <h2 className="mt-3 font-display text-4xl text-ink sm:text-5xl">Elles en parlent</h2>
+              </div>
+              <Link href="/avis" className="flex items-center gap-3 transition-colors hover:text-plum">
+                <span className="font-display text-4xl text-ink">
+                  {moyenne.toLocaleString('fr-BE', { minimumFractionDigits: 1 })}
+                </span>
+                <span>
+                  <Etoiles note={moyenne} taille={18} />
+                  <span className="block text-xs uppercase tracking-[0.15em] text-ink/55">
+                    {total} avis · tout voir →
+                  </span>
+                </span>
+              </Link>
+            </div>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {avis.slice(0, 3).map((a) => (
+                <CarteAvis key={a.id} a={a} />
+              ))}
+            </div>
+          </section>
+        );
+      })()}
       {/* ── Bandeau henné (page dédiée) ───────────────────────── */}
       <section className="mx-auto mt-24 max-w-content px-6">
         <div className="relative overflow-hidden bg-plum px-8 py-16 text-center text-cloud sm:px-16 sm:py-20">

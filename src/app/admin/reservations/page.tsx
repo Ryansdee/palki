@@ -5,6 +5,9 @@ import {
   getReservations,
   updateReservation,
   deleteReservation,
+  creerInvitationAvis,
+  numeroWhatsApp,
+  prenomDe,
 } from '@/lib/data';
 import { useTenant } from '@/lib/tenant-context';
 import type { Reservation, StatutReservation } from '@/lib/types';
@@ -53,6 +56,29 @@ export default function AdminReservations() {
   async function setStatut(r: Reservation, statut: StatutReservation) {
     await updateReservation(r.id!, { statut }, r.occupationId);
     await load();
+  }
+
+    // Crée (ou réutilise) le lien d'avis de la réservation et l'envoie par WhatsApp.
+  async function demanderAvis(r: Reservation) {
+    // Fenêtre ouverte tout de suite (sinon le navigateur bloque le pop-up après l'await).
+    const fenetre = window.open('', '_blank');
+    try {
+      const token = r.avisToken ?? (await creerInvitationAvis(orgId, r));
+      const lien = `${window.location.origin}/laisser-un-avis?t=${token}`;
+      const message = [
+        `Bonjour ${prenomDe(r.client.nom)} 😊`,
+        `Merci pour votre visite chez Palki !`,
+        `Votre avis sur « ${r.prestation} » nous aiderait beaucoup, cela prend 1 minute :`,
+        lien,
+      ].join('\n');
+      const url = `https://wa.me/${numeroWhatsApp(r.client.tel)}?text=${encodeURIComponent(message)}`;
+      if (fenetre) fenetre.location.href = url;
+      else window.location.href = url;
+      if (!r.avisToken) await load();
+    } catch {
+      fenetre?.close();
+      alert("Impossible de créer le lien d'avis. Vérifiez les règles Firestore (avisInvitations).");
+    }
   }
   async function remove(r: Reservation) {
     if (!confirm('Supprimer définitivement cette réservation ?')) return;
@@ -210,6 +236,18 @@ export default function AdminReservations() {
                   Suppr.
                 </button>
               </div>
+                {r.statut === 'confirme' && (
+                  <button
+                    onClick={() => demanderAvis(r)}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      r.avisToken
+                        ? 'border border-indigo-200 text-indigo-600 hover:bg-indigo-50'
+                        : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                    }`}
+                  >
+                    {r.avisToken ? 'Avis demandé ✓ (renvoyer)' : 'Demander un avis'}
+                  </button>
+                )}
             </div>
           ))
         )}

@@ -95,11 +95,11 @@ export default function ContactPage() {
           <button
             type="button"
             onClick={() => {
-              window.location.href = `tel:${settings.telephone.replace(/\s/g, '')}`;
+              window.location.href = `tel:${settings.telephone.replace(/\D/g, '')}`;
             }}
             className="mt-3 inline-block font-display text-2xl text-ink transition-colors hover:text-plum"
           >
-            {settings.telephone}
+            {settings.telephone.replace(/^\+?32/, '0')}
           </button>
 
           <p className="eyebrow mt-10">Nous écrire sur WhatsApp</p>
@@ -136,27 +136,6 @@ export default function ContactPage() {
               Nous contacter sur WhatsApp
             </a>
           </div>
-
-          <p className="eyebrow mt-10">Horaires</p>
-          <ul className="mt-3 max-w-sm divide-y divide-sand border-t border-sand">
-            {horaires.map((h) => (
-              <li
-                key={h.jour}
-                className="flex justify-between py-3 capitalize text-ink/80"
-              >
-                <span>{h.jour}</span>
-                <span className="text-ink/60">
-                  {h.surRdv
-                    ? 'Sur rendez-vous'
-                    : h.ferme || h.creneaux.length === 0
-                      ? 'Fermé'
-                      : h.creneaux
-                          .map((c) => `${c.debut} – ${c.fin}`)
-                          .join(', ')}
-                </span>
-              </li>
-            ))}
-          </ul>
         </div>
 
         <div className="frame p-3">

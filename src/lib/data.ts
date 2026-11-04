@@ -23,6 +23,8 @@ import type {
   Settings,
   Formation,
   JourCreneaux,
+  Avis,
+  AvisInvitation,
 } from './types';
 
 export const JOURS = [
@@ -820,4 +822,116 @@ export async function seedDefaults(orgId: string): Promise<void> {
   if (existing.empty) {
     for (const t of DEFAULT_TARIFS) await addTarif(orgId, t);
   }
+}
+// ── Avis clientes ─────────────────────────────────────────────────────
+// Flux : l'admin crée une invitation (token aléatoire) depuis une réservation
+// et l'envoie par WhatsApp → la cliente note via /laisser-un-avis?t=TOKEN →
+// l'avis arrive « en attente » → l'admin le publie (ou le masque) et peut répondre.
+
+const genererToken = (): string => {
+  const a = new Uint8Array(18);
+  crypto.getRandomValues(a);
+  return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+};
+
+export const prenomDe = (nom: string): string => nom.trim().split(/\s+/)[0] ?? '';
+
+export async function creerInvitationAvis(
+  orgId: string,
+  r: Reservation
+): Promise<string> {
+  const token = genererToken();
+  const invitation: AvisInvitation = {
+    orgId,
+    reservationId: r.id!,
+    prenom: prenomDe(r.client.nom),
+    prestation: r.prestation,
+    serviceSlug: r.serviceSlug,
+    createdAt: Date.now(),
+  };
+  await setDoc(doc(db, 'avisInvitations', token), invitation);
+  await updateDoc(doc(db, 'reservations', r.id!), { avisToken: token });
+  return token;
+}
+
+export async function getInvitationAvis(token: string): Promise<AvisInvitation | null> {
+  if (!/^[a-f0-9]{36}$/.test(token)) return null;
+  try {
+    const snap = await getDoc(doc(db, 'avisInvitations', token));
+    return snap.exists() ? (snap.data() as AvisInvitation) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Création uniquement : si un avis existe déjà pour ce token, Firestore refuse
+// (ce serait une mise à jour, réservée à l'admin).
+export async function envoyerAvis(
+  token: string,
+  inv: AvisInvitation,
+  data: { prenom: string; note: number; commentaire: string }
+): Promise<void> {
+  const avis: Omit<Avis, 'id'> = {
+    orgId: inv.orgId,
+    prenom: data.prenom.trim().slice(0, 40) || inv.prenom,
+    prestation: inv.prestation,
+    serviceSlug: inv.serviceSlug,
+    note: Math.min(5, Math.max(1, Math.round(data.note))),
+    commentaire: data.commentaire.trim().slice(0, 1000),
+    statut: 'en_attente',
+    createdAt: Date.now(),
+  };
+  await setDoc(doc(db, 'avis', token), avis);
+}
+
+const trierAvis = (l: Avis[]) => l.sort((a, b) => b.createdAt - a.createdAt);
+
+export async function getAvisPublies(orgId: string): Promise<Avis[]> {
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, 'avis'),
+        where('orgId', '==', orgId),
+        where('statut', '==', 'publie')
+      )
+    );
+    return trierAvis(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Avis, 'id'>) })));
+  } catch {
+    return [];
+  }
+}
+
+export async function getTousAvis(orgId: string): Promise<Avis[]> {
+  try {
+    const snap = await getDocs(
+      query(collection(db, 'avis'), where('orgId', '==', orgId))
+    );
+    return trierAvis(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Avis, 'id'>) })));
+  } catch {
+    return [];
+  }
+}
+
+export const updateAvis = (id: string, patch: Partial<Avis>) =>
+  updateDoc(doc(db, 'avis', id), patch);
+export const deleteAvis = (id: string) => deleteDoc(doc(db, 'avis', id));
+
+export function statsAvis(liste: Avis[]): {
+  moyenne: number;
+  total: number;
+  repartition: Record<1 | 2 | 3 | 4 | 5, number>;
+} {
+  const repartition = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>;
+  for (const a of liste) repartition[a.note as 1 | 2 | 3 | 4 | 5] += 1;
+  const total = liste.length;
+  const moyenne = total ? liste.reduce((s, a) => s + a.note, 0) / total : 0;
+  return { moyenne: Math.round(moyenne * 10) / 10, total, repartition };
+}
+
+// "0470 12 34 56" / "+32 470…" / "0032 470…" → "32470123456" (format wa.me)
+export function numeroWhatsApp(tel: string): string {
+  let n = tel.replace(/\D/g, '');
+  if (n.startsWith('00')) n = n.slice(2);
+  else if (n.startsWith('0')) n = '32' + n.slice(1);
+  return n;
 }

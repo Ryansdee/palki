@@ -79,6 +79,7 @@ export interface Reservation {
   note?: string;
   statut: StatutReservation;
   createdAt: number;
+  avisToken?: string;
   occupationId?: string; // lien vers le créneau bloqué (collection "occupation")
 }
 
@@ -89,6 +90,34 @@ export interface Occupation {
   date: string;
   heure: string;
   dureeMin: number;
+}
+// ── Avis clientes ─────────────────────────────────────────────────────
+// Un avis ne peut être laissé que via une invitation liée à une réservation
+// (lien unique envoyé par WhatsApp). L'id de l'avis = le token de l'invitation,
+// ce qui garantit un seul avis par rendez-vous.
+export type StatutAvis = 'en_attente' | 'publie' | 'masque';
+
+export interface AvisInvitation {
+  orgId: string;
+  reservationId: string;
+  prenom: string;
+  prestation: string;
+  serviceSlug: string;
+  createdAt: number;
+}
+
+export interface Avis {
+  id?: string;
+  orgId: string;
+  prenom: string;
+  prestation: string;
+  serviceSlug: string;
+  note: number; // 1 à 5
+  commentaire: string;
+  statut: StatutAvis;
+  createdAt: number;
+  reponse?: string; // réponse publique de l'institut
+  reponseAt?: number;
 }
 
 export interface Settings {

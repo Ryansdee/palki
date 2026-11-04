@@ -9,13 +9,13 @@ const ORG_ID = process.env.NEXT_PUBLIC_ORG_ID ?? 'cGfNmIOEyottsLXor6P5';
 // ─── À compléter avec les informations officielles de la cliente ─────
 // (voir sa fiche sur https://kbopub.economie.fgov.be)
 const EDITEUR = {
-  nom: '[Nom et prénom de la gérante, ou dénomination de la société]',
+  nom: '[Palki]',
   forme: '[Indépendante en personne physique / SRL / …]',
   bce: '[0xxx.xxx.xxx]',
   tva: '[BE 0xxx.xxx.xxx — ou « non assujettie à la TVA (franchise) »]',
-  email: '[adresse e-mail de contact]',
+  email: 'contact@palki.be',
   conservationMois: 24, // durée de conservation des réservations
-  miseAJour: '3 novembre 2026',
+  miseAJour: '4 novembre 2026',
 };
 
 const telAffiche = (tel: string) => {
@@ -54,7 +54,7 @@ export default function MentionsLegales() {
       <div className="mt-16 space-y-12">
         <Section titre="Éditeur du site">
           <p>
-            Le site <strong>palki-beauty.netlify.app</strong> est édité par{' '}
+            Le site <strong>palki.be</strong> est édité par{' '}
             <strong>{EDITEUR.nom}</strong> ({EDITEUR.forme}), exploitant l&apos;institut
             de beauté <strong>Palki — Au fil de la beauté</strong>.
           </p>

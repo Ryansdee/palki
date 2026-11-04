@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/admin/creneaux', label: 'Créneaux' },
   { href: '/admin/disponibilites', label: 'Disponibilités' },
   { href: '/admin/reservations', label: 'Réservations' },
+    { href: '/admin/avis', label: 'Avis' },
 ];
 
 export default function AdminNav() {
