@@ -76,10 +76,14 @@ export default function MentionsLegales() {
             Site hébergé par <strong>Netlify, Inc.</strong>, San Francisco, Californie
             (États-Unis) — www.netlify.com.
           </p>
+          Nom de domaine : <strong>palki.be</strong> — Certificat SSL fourni par (lws.fr).
           <p>
             Les données (réservations, contenus) sont stockées via{' '}
             <strong>Google Firebase</strong>, fourni pour l&apos;Europe par Google
             Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande.
+          </p>
+          <p>
+            Les données personnelles respectent le RGPD et sont conservées pendant {EDITEUR.conservationMois} mois après le dernier rendez-vous, puis supprimées.
           </p>
         </Section>
 
@@ -159,6 +163,15 @@ export default function MentionsLegales() {
             litige, et à défaut de solution amiable, les tribunaux de
             l&apos;arrondissement judiciaire de Bruxelles sont compétents, sans
             préjudice des règles impératives protégeant le consommateur.
+          </p>
+        </Section>
+        <Section titre="Développeur du site">
+          <p>
+            Site développé par <strong>Ryansdee</strong> —{' '}
+            <a href="https://ryansdee.netlify.app" target="_blank" rel="noopener noreferrer" className="text-plum underline">
+              site de Ryansdee
+            </a>
+            .
           </p>
         </Section>
       </div>
