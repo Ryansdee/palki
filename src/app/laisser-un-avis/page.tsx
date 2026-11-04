@@ -54,12 +54,15 @@ function Formulaire() {
     return (
       <div className="mx-auto max-w-xl px-6 py-32 text-center">
         <h1 className="font-display text-4xl text-ink">Lien invalide</h1>
-        <p className="mt-6 leading-relaxed text-ink/70">
-          Ce lien d&apos;avis n&apos;existe pas ou a expiré. Les avis peuvent être
-          laissés uniquement via le lien personnel reçu après votre rendez-vous.
+         <p className="mt-6 leading-relaxed text-ink/70">
+          Ce lien d&apos;avis n&apos;existe pas ou a expiré. Vous êtes venue sans
+          réserver en ligne&nbsp;? Vous pouvez quand même nous laisser un avis.
         </p>
-        <Link href="/" className="btn-solid mt-8">Retour à l&apos;accueil</Link>
-      </div>
+        <div className="mt-8 flex flex-wrap justify-center gap-4">
+          <Link href="/laisser-un-avis-sans-reservation" className="btn-solid">Laisser un avis</Link>
+          <Link href="/" className="btn-outline">Retour à l&apos;accueil</Link>
+        </div>
+        </div>
     );
   }
 

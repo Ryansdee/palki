@@ -866,6 +866,8 @@ export async function getInvitationAvis(token: string): Promise<AvisInvitation |
 
 // Création uniquement : si un avis existe déjà pour ce token, Firestore refuse
 // (ce serait une mise à jour, réservée à l'admin).
+// Création uniquement : si un avis existe déjà pour ce token, Firestore refuse
+// (ce serait une mise à jour, réservée à l'admin).
 export async function envoyerAvis(
   token: string,
   inv: AvisInvitation,
@@ -879,9 +881,30 @@ export async function envoyerAvis(
     note: Math.min(5, Math.max(1, Math.round(data.note))),
     commentaire: data.commentaire.trim().slice(0, 1000),
     statut: 'en_attente',
+    source: 'invitation',
     createdAt: Date.now(),
   };
   await setDoc(doc(db, 'avis', token), avis);
+}
+
+// Avis sans réservation : formulaire public, id auto, toujours « en attente »
+// → l'admin valide avant publication (même flux de modération).
+export async function envoyerAvisLibre(
+  orgId: string,
+  data: { prenom: string; prestation: string; serviceSlug: string; note: number; commentaire: string }
+): Promise<void> {
+  const avis: Omit<Avis, 'id'> = {
+    orgId,
+    prenom: data.prenom.trim().slice(0, 40),
+    prestation: data.prestation.trim().slice(0, 80),
+    serviceSlug: data.serviceSlug.trim().slice(0, 60),
+    note: Math.min(5, Math.max(1, Math.round(data.note))),
+    commentaire: data.commentaire.trim().slice(0, 1000),
+    statut: 'en_attente',
+    source: 'libre',
+    createdAt: Date.now(),
+  };
+  await addDoc(collection(db, 'avis'), avis);
 }
 
 const trierAvis = (l: Avis[]) => l.sort((a, b) => b.createdAt - a.createdAt);

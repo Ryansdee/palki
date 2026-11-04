@@ -95,7 +95,16 @@ export interface Occupation {
 // Un avis ne peut être laissé que via une invitation liée à une réservation
 // (lien unique envoyé par WhatsApp). L'id de l'avis = le token de l'invitation,
 // ce qui garantit un seul avis par rendez-vous.
+// ── Avis clientes ─────────────────────────────────────────────────────
+// Deux sources :
+//  - 'invitation' : lien unique envoyé par WhatsApp après une réservation.
+//    L'id de l'avis = le token de l'invitation → un seul avis par rendez-vous.
+//    Affiché avec le badge « Rendez-vous vérifié ».
+//  - 'libre' : formulaire public /laisser-un-avis-sans-reservation (clientes
+//    venues sans réserver en ligne). Toujours modéré avant publication.
+// Les avis antérieurs sans champ `source` sont des avis 'invitation'.
 export type StatutAvis = 'en_attente' | 'publie' | 'masque';
+export type SourceAvis = 'invitation' | 'libre';
 
 export interface AvisInvitation {
   orgId: string;
@@ -115,6 +124,7 @@ export interface Avis {
   note: number; // 1 à 5
   commentaire: string;
   statut: StatutAvis;
+  source?: SourceAvis; // absent = 'invitation' (anciens avis)
   createdAt: number;
   reponse?: string; // réponse publique de l'institut
   reponseAt?: number;

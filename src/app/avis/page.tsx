@@ -21,7 +21,7 @@ export default function PageAvis() {
   return (
     <div className="mx-auto max-w-content px-6 py-20">
       <header className="text-center">
-        <p className="eyebrow">Avis vérifiés</p>
+        <p className="eyebrow">Avis clientes</p>
         <h1 className="mt-4 font-display text-5xl text-ink sm:text-6xl">Elles en parlent</h1>
       </header>
 
@@ -61,14 +61,16 @@ export default function PageAvis() {
       )}
 
       <p className="mx-auto mt-16 max-w-2xl text-center text-sm leading-relaxed text-ink/50">
-        Avis vérifiés : ils ne peuvent être laissés que par des clientes, via un lien
-        personnel envoyé après leur rendez-vous à l&apos;institut. Tous les avis sont
-        publiés, positifs comme négatifs, à l&apos;exception de ceux contenant des
-        propos injurieux ou des données personnelles.
+        Les avis marqués «&nbsp;Rendez-vous vérifié&nbsp;» ont été laissés via un lien
+        personnel envoyé après une réservation. Les autres proviennent de clientes
+        venues à l&apos;institut sans réserver en ligne. Tous les avis sont relus
+        avant publication et publiés, positifs comme négatifs, à l&apos;exception
+        de ceux contenant des propos injurieux ou des données personnelles.
       </p>
 
-      <div className="mt-10 text-center">
+      <div className="mt-10 flex flex-wrap justify-center gap-4">
         <Link href="/rendez-vous" className="btn-solid">Prendre rendez-vous</Link>
+        <Link href="/laisser-un-avis-sans-reservation" className="btn-outline">Laisser un avis</Link>
       </div>
     </div>
   );

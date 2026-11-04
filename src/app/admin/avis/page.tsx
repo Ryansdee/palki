@@ -58,6 +58,15 @@ function CarteAdmin({ a, onChange }: { a: Avis; onChange: () => Promise<void> })
             <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${BADGE[a.statut]}`}>
               {LABELS[a.statut]}
             </span>
+                        {a.source === 'libre' ? (
+              <span className="rounded-full bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-200">
+                Sans réservation
+              </span>
+            ) : (
+              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-200">
+                RDV vérifié
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs text-slate-400">
             {new Date(a.createdAt).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
