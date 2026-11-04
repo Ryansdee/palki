@@ -19,10 +19,10 @@ export default function SoinsPage() {
       <header className="mx-auto max-w-2xl text-center">
         <p className="eyebrow">Nos prestations</p>
         <h1 className="mt-4 font-display text-5xl text-ink sm:text-6xl">
-          Nos soins
+          Nos services
         </h1>
         <p className="mt-5 leading-relaxed text-ink/65">
-          Découvrez nos prestations de beauté et laissez-vous séduire par nos soins personnalisés. Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, notre équipe est là pour vous offrir une expérience unique et agréable.
+          Découvrez nos prestations de beauté et laissez-vous séduire par nos services personnalisés. Que vous souhaitiez un soin du visage, une épilation au fil ou un henné naturel, notre équipe est là pour vous offrir une expérience unique et agréable.
         </p>
       </header>
 

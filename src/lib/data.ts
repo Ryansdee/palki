@@ -57,7 +57,7 @@ export const DEFAULT_SERVICES: Service[] = [
     description:
       "[slug — description Épilation à compléter par la cliente]",
     image:
-      'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1200&q=80',
+      'https://i.ibb.co/qFgGmMq8/Whats-App-Image-2026-08-20-at-15-02-30.jpg',
     ordre: 1,
     actif: true,
   },
@@ -67,7 +67,7 @@ export const DEFAULT_SERVICES: Service[] = [
     resume: "Henné naturel à base d'huiles essentielles.",
     description: '[slug — description Henné à compléter par la cliente]',
     image:
-      'https://tresorsdusouk.com/cdn/shop/files/image-768x1024.jpg?v=1729523918&width=1445',
+      'https://i.ibb.co/VcR4SMHG/Whats-App-Image-2026-11-04-at-13-19-06.jpg',
     ordre: 2,
     actif: true,
   },
