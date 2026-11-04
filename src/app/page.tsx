@@ -273,8 +273,8 @@ export default function Home() {
             <div className="frame p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://palki.be/wp-content/uploads/2022/08/image-1.png"
-                alt="https://palki.be/wp-content/uploads/2022/08/image-1.png"
+                src="https://i.ibb.co/Mk1Sk543/Capture-d-cran-2026-11-04-122809.png"
+                alt="https://i.ibb.co/Mk1Sk543/Capture-d-cran-2026-11-04-122809.png"
                 className="aspect-[4/5] w-full object-cover"
               />
             </div>
