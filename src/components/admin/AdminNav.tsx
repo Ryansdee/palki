@@ -9,11 +9,12 @@ const LINKS = [
   { href: '/admin', label: 'Tableau de bord' },
   { href: '/admin/tarifs', label: 'Tarifs' },
   { href: '/admin/promotions', label: 'Promotions' },
+  { href: '/admin/produits', label: 'Boutique' },
   { href: '/admin/galeries', label: 'Galeries' },
   { href: '/admin/creneaux', label: 'Créneaux' },
   { href: '/admin/disponibilites', label: 'Disponibilités' },
   { href: '/admin/reservations', label: 'Réservations' },
-    { href: '/admin/avis', label: 'Avis' },
+  { href: '/admin/avis', label: 'Avis' },
 ];
 
 export default function AdminNav() {
